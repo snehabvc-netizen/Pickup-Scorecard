@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Large-NFBF Pickup Score Card</title>
+<style>
+:root{--blue:#2874f0;--orange:#fb641b;--green:#2e7d32;--red:#c62828;--amber:#e65100;--bg:#f1f3f6;--card:#fff;--bd:#e0e0e0;--txt:#212121;--muted:#757575;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:13px;}
+
+/* Header */
+.hdr{background:var(--blue);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.hdr h1{font-size:16px;font-weight:700;}
+.hdr small{opacity:.75;font-size:11px;display:block;margin-top:2px;}
+
+/* Tabs */
+.tabs{background:#fff;border-bottom:2px solid var(--bd);display:flex;padding:0 20px;}
+.tab{padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--muted);transition:.15s;}
+.tab:hover{color:var(--blue);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+/* Upload bar */
+.upbar{background:#fff3e0;border-bottom:2px solid var(--orange);padding:8px 20px;display:flex;align-items:center;gap:10px;font-size:12px;}
+.upbar label{background:var(--orange);color:#fff;padding:5px 12px;border-radius:2px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:12px;}
+.upbar label:hover{background:#e55100;}
+.upbar input{display:none;}
+.upbar a{color:var(--blue);font-weight:600;}
+#upstat{color:var(--green);font-weight:600;margin-left:auto;}
+
+/* Filter panel */
+.fpanel{background:#fff;border-bottom:1px solid var(--bd);padding:12px 20px;}
+.fpanel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;}
+.fg label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.5px;display:block;margin-bottom:3px;}
+.fg select,.fg input[type=text]{width:100%;height:30px;padding:0 8px;border:1px solid var(--bd);border-radius:2px;font-size:12px;background:#fff;cursor:pointer;}
+.fg select:focus,.fg input:focus{outline:none;border-color:var(--blue);}
+.factions{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.btn{height:30px;padding:0 14px;border:none;border-radius:2px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-p{background:var(--blue);color:#fff;} .btn-p:hover{background:#1a5dc8;}
+.btn-r{background:#fff;color:var(--blue);border:1px solid var(--blue);} .btn-r:hover{background:#e8f0fe;}
+.btn-d{background:var(--green);color:#fff;} .btn-d:hover{background:#1b5e20;}
+.rcount{margin-left:auto;font-size:12px;color:var(--muted);}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:14px 20px 0;}
+.kpi{background:var(--card);border-radius:3px;padding:11px 14px;box-shadow:0 1px 3px rgba(0,0,0,.1);border-left:4px solid var(--blue);}
+.kpi.g{border-left-color:var(--green);}.kpi.r{border-left-color:var(--red);}.kpi.a{border-left-color:var(--amber);}.kpi.o{border-left-color:var(--orange);}
+.kl{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;letter-spacing:.5px;}
+.kv{font-size:20px;font-weight:700;margin-top:3px;}
+.ks{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* Table */
+.sh{padding:12px 20px 6px;display:flex;align-items:center;justify-content:space-between;}
+.sh h2{font-size:13px;font-weight:700;color:var(--blue);}
+.sh span{font-size:11px;color:var(--muted);}
+.tc{margin:0 20px 14px;background:var(--card);border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden;}
+.twrap{overflow-x:auto;max-height:450px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:#f5f5f5;padding:8px 10px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:#555;white-space:nowrap;position:sticky;top:0;cursor:pointer;border-bottom:2px solid var(--bd);user-select:none;}
+th:hover{background:#ececec;}
+th.asc::after{content:' ▲';color:var(--blue);}
+th.desc::after{content:' ▼';color:var(--blue);}
+td{padding:7px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap;}
+tr:hover td{background:#f8f9ff;}
+tr:last-child td{border:none;}
+td.sticky-left{font-weight:600;background:#fafafa;position:sticky;left:0;z-index:1;min-width:210px;}
+td.num{text-align:right;font-family:monospace;}
+td.pct{text-align:right;}
+.b{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.bg{background:#e8f5e9;color:#1b5e20;}.br{background:#ffebee;color:#b71c1c;}
+.ba{background:#fff3e0;color:#bf360c;}.bn{background:#f5f5f5;color:#616161;}
+.bp{background:#e3f2fd;color:#1565c0;}.bv{background:#f3e5f5;color:#6a1b9a;}
+.date-hdr{background:var(--blue)!important;color:#fff!important;}
+/* Row-level conditional formatting */
+tr.row-green td{background:#f0faf0 !important;}
+tr.row-green td.sticky-left{background:#e0f5e0 !important;border-left:4px solid #2e7d32;}
+tr.row-amber td{background:#fffbf0 !important;}
+tr.row-amber td.sticky-left{background:#fff3e0 !important;border-left:4px solid #f57c00;}
+tr.row-red td{background:#fff5f5 !important;}
+tr.row-red td.sticky-left{background:#ffebee !important;border-left:4px solid #c62828;}
+tr.row-neutral td.sticky-left{border-left:4px solid #e0e0e0;}
+/* Cell-level coloring for multi-date view */
+td.cell-green{background:#e8f5e9 !important;color:#1b5e20;font-weight:600;}
+td.cell-amber{background:#fff8e1 !important;color:#e65100;font-weight:600;}
+td.cell-red{background:#ffebee !important;color:#b71c1c;font-weight:600;}
+td.cell-null{background:#fafafa !important;color:#ccc;}
+/* Legend */
+.legend{display:flex;gap:14px;align-items:center;padding:8px 20px;font-size:11px;background:#fff;border-bottom:1px solid var(--bd);}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.legend-dot{width:12px;height:12px;border-radius:2px;}
+/* Multi-select filter */
+.ms-wrap{position:relative;width:100%;}
+.ms-btn{width:100%;text-align:left;background:#fff;border:1px solid #d0d0d0;border-radius:4px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;}
+.ms-btn:hover{border-color:#999;}
+.ms-panel{display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:2000;background:#fff;border:1px solid #bbb;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.18);min-width:220px;max-width:320px;}
+.ms-panel.open{display:block;}
+.ms-search{width:100%;box-sizing:border-box;padding:7px 10px;border:none;border-bottom:1px solid #eee;font-size:12px;outline:none;}
+.ms-list{max-height:220px;overflow-y:auto;}
+.ms-item{display:flex;align-items:center;gap:7px;padding:5px 10px;font-size:12px;cursor:pointer;user-select:none;}
+.ms-item:hover{background:#f0f4ff;}
+.ms-item input[type=checkbox]{cursor:pointer;accent-color:var(--blue);}
+.ms-foot{padding:6px 8px;border-top:1px solid #eee;display:flex;gap:6px;}
+.ms-foot button{flex:1;padding:5px;font-size:11px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#f5f5f5;}
+.ms-foot button:first-child{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600;}
+
+/* Pagination */
+.pgn{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--bd);}
+.pgn-info{font-size:11px;color:var(--muted);}
+.pgn-btns{display:flex;gap:3px;}
+.pb{padding:3px 9px;border:1px solid var(--bd);background:#fff;border-radius:2px;cursor:pointer;font-size:11px;}
+.pb:hover{background:#e8f0fe;border-color:var(--blue);color:var(--blue);}
+.pb.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.pb:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Tab content */
+.tpane{display:none;} .tpane.active{display:block;}
+.nodata{text-align:center;padding:32px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <div>
+    <h1>Large-NFBF Pickup Score Card</h1>
+    <small>May 1 – Jun 24, 2026 · 48 pickup hubs</small>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-d" onclick="downloadCSV()">⬇ Download CSV</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('metrics',this)">📊 Metrics View</div>
+  <div class="tab" onclick="switchTab('raw',this)">📋 Raw Data</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 1 — METRICS VIEW
+════════════════════════════════════════════════════════════ -->
+<div id="pane-metrics" class="tpane active">
+
+  <!-- Metrics Filters -->
+  <div class="fpanel">
+    <div class="fpanel-grid">
+      <div class="fg">
+        <label>From Date</label>
+        <select id="m-from" onchange="renderMetrics()"><option value="">1-May (Start)</option></select>
+      </div>
+      <div class="fg">
+        <label>To Date</label>
+        <select id="m-to" onchange="renderMetrics()"><option value="">24-Jun (End)</option></select>
+      </div>
+      <div class="fg">
+        <label>View Mode</label>
+        <select id="m-mode" onchange="renderMetrics()">
+          <option value="single">Single date column</option>
+          <option value="multi">All selected dates</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Metric type</label>
+        <select id="m-mtype" onchange="renderMetrics()">
+          <option value="">All metrics</option>
+          <option value="pct">% metrics only</option>
+          <option value="vol">Volume metrics only</option>
+        </select>
+      </div>
+    </div>
+    <div class="factions">
+      <button class="btn btn-r" onclick="resetMetricFilters()">Reset</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" id="m-kpis"></div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <strong style="font-size:11px;color:#555;">Colour key:</strong>
+    <div class="legend-item"><div class="legend-dot" style="background:#c8e6c9;border:1px solid #2e7d32"></div> Good / On track</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fff9c4;border:1px solid #f57f17"></div> Watch / Borderline</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffcdd2;border:1px solid #c62828"></div> Poor / Needs action</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #bbb"></div> Volume / Neutral</div>
+    <span style="font-size:11px;color:#999;margin-left:12px;">· <em>—</em> = no data for that date (Sunday / holiday / not yet available)</span>
+  </div>
+
+  <!-- Overall metrics table -->
+  <div class="sh"><h2>Overall Metrics</h2><span id="m-label"></span></div>
+  <div class="tc"><div class="twrap">
+    <table><thead id="m-thead"></thead><tbody id="m-tbody"></tbody></table>
+  </div></div>
+
+  <!-- Hub table -->
+  <div class="sh"><h2>Hub Breakdown — Total Shipments</h2><span id="hub-label"></span></div>
+  <div class="tc"><div class="twrap">
+    <table><thead id="h-thead"></thead><tbody id="h-tbody"></tbody></table>
+  </div></div>
+
+</div><!-- /pane-metrics -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 2 — RAW DATA
+════════════════════════════════════════════════════════════ -->
+<div id="pane-raw" class="tpane">
+
+  <!-- Upload bar -->
+  <div class="upbar">
+    <label style="font-weight:600;background:var(--blue);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;">📂 Upload Real Data CSV<input type="file" id="csv-file" accept=".csv" style="display:none"></label>
+    <span style="color:#c0392b;font-weight:600">⚠ Sample data shown (800 rows). Upload your actual Google Sheet CSV to see all rows.</span>
+    &nbsp;·&nbsp;
+    <a href="https://docs.google.com/spreadsheets/d/12pFk15rAKV5wx2_E64MGnGVEgq2KWd460vDgrXg8HU0/export?format=csv&gid=2121009471" target="_blank" style="color:var(--blue)">⬇ Export CSV from Google Sheets</a>
+    <span id="upstat" style="color:green;font-weight:600;margin-left:8px"></span>
+    <button onclick="clearData()" style="margin-left:8px;background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;">🗑 Clear All Data</button>
+  </div>
+
+  <!-- Raw Data Filters -->
+  <div class="fpanel">
+    <div class="fpanel-grid" id="raw-filters-grid">
+      <!-- Date range -->
+      <div class="fg">
+        <label>From Date</label>
+        <select id="r-from" onchange="applyRawFilters()"><option value="">1-May (Start)</option></select>
+      </div>
+      <div class="fg">
+        <label>To Date</label>
+        <select id="r-to" onchange="applyRawFilters()"><option value="">24-Jun (End)</option></select>
+      </div>
+      <div class="fg">
+        <label>Seller / Order ID</label>
+        <input type="text" id="r-seller" placeholder="Search…" oninput="applyRawFilters()">
+      </div>
+      <div class="fg"><label>PH Name</label><div class="ms-wrap" id="ms-ph"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-ph')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-ph',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-ph',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-ph')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Overall Status</label><div class="ms-wrap" id="ms-status"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-status')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-status',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-status',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-status')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Issue Type</label><div class="ms-wrap" id="ms-issue"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-issue')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-issue',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-issue',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-issue')">Clear</button></div></div></div></div>
+      <div class="fg"><label>RTD Breach Check</label><div class="ms-wrap" id="ms-rtd"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-rtd')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-rtd',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-rtd',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-rtd')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Incubation</label><div class="ms-wrap" id="ms-incub"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-incub')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-incub',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-incub',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-incub')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Ship Actual NA</label><div class="ms-wrap" id="ms-shipna"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-shipna')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-shipna',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-shipna',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-shipna')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Seller Holiday Flag</label><div class="ms-wrap" id="ms-holiday"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-holiday')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-holiday',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-holiday',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-holiday')">Clear</button></div></div></div></div>
+      <div class="fg">
+        <label>Sum of Units</label>
+        <select id="r-units" onchange="applyRawFilters()"><option value="">All</option></select>
+      </div>
+      <div class="fg"><label>100% Not Picked</label><div class="ms-wrap" id="ms-notpicked"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-notpicked')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-notpicked',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-notpicked',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-notpicked')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Low DRR Sellers</label><div class="ms-wrap" id="ms-lowdrr"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-lowdrr')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-lowdrr',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-lowdrr',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-lowdrr')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Attempt / Not</label><div class="ms-wrap" id="ms-attempt"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-attempt')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-attempt',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-attempt',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-attempt')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Week Num</label><div class="ms-wrap" id="ms-week"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-week')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-week',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-week',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-week')">Clear</button></div></div></div></div>
+      <div class="fg"><label>MP Status</label><div class="ms-wrap" id="ms-mpstatus"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-mpstatus')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-mpstatus',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-mpstatus',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-mpstatus')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Fulfil Item Unit Status</label><div class="ms-wrap" id="ms-fulfill"><button class="ms-btn" onclick="event.stopPropagation();msToggle('ms-fulfill')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search…" oninput="msFilter('ms-fulfill',this.value)"><div class="ms-list"><label class="ms-item ms-all-item"><input type="checkbox" class="ms-all-cb" checked onchange="msToggleAll('ms-fulfill',this)"> (All)</label></div><div class="ms-foot"><button onclick="applyRawFilters()">Apply</button><button onclick="msReset('ms-fulfill')">Clear</button></div></div></div></div>
+    </div>
+    <div class="factions">
+      <button class="btn btn-p" onclick="applyRawFilters()">Apply</button>
+      <button class="btn btn-r" onclick="resetRawFilters()">Reset All</button>
+      <button class="btn btn-d" onclick="downloadRawCSV()">⬇ Download Filtered CSV</button>
+      <span class="rcount" id="raw-count"></span>
+    </div>
+  </div>
+
+  <!-- Raw KPI bar -->
+  <div class="kpis" id="raw-kpis" style="margin:8px 0"></div>
+
+  <!-- Raw data table -->
+  <div class="sh" style="display:flex;align-items:center;gap:16px">
+    <h2 style="margin:0">Raw Data</h2>
+    <span id="raw-table-label" style="flex:1"></span>
+    <label style="font-size:12px;color:#555">Rows per page:
+      <select id="r-pagesize" onchange="RAW_PAGE_SIZE=+this.value;rawPage=1;renderRawTable()" style="margin-left:4px">
+        <option value="50">50</option>
+        <option value="100" selected>100</option>
+        <option value="250">250</option>
+        <option value="500">500</option>
+        <option value="99999">All</option>
+      </select>
+    </label>
+  </div>
+  <div class="tc">
+    <div class="twrap">
+      <table><thead id="raw-thead"></thead><tbody id="raw-tbody"></tbody></table>
+      <div class="nodata" id="raw-nodata" style="display:none">No rows match the current filters.</div>
+    </div>
+    <div class="pgn" id="raw-pgn"></div>
+  </div>
+
+</div><!-- /pane-raw -->
+
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// METRICS DATA
+// ══════════════════════════════════════════════════════════════
+const DATES = ['1-May','2-May','3-May','4-May','5-May','6-May','7-May','8-May','9-May','11-May','12-May','13-May','14-May','15-May','16-May','17-May','18-May','19-May','20-May','21-May','22-May','24-May','25-May','26-May','27-May','28-May','29-May','30-May','1-Jun','2-Jun','3-Jun','4-Jun','5-Jun','6-Jun','8-Jun','9-Jun','10-Jun','11-Jun','12-Jun','13-Jun','15-Jun','16-Jun','17-Jun','18-Jun','19-Jun','20-Jun','22-Jun','23-Jun','24-Jun'];
+
+// g = green threshold, a = amber threshold
+// hb:true  → value >= g:green, >= a:amber, < a:red
+// hb:false → value <= g:green, <= a:amber, > a:red
+// hb:null  → neutral (no colour)
+const METRICS = [
+  {label:'Pickup %',              type:'pct',   hb:true,  g:95,   a:93,   data:[95.04,96.11,95.06,95.15,95.80,96.43,97.05,97.21,97.36,96.51,96.64,95.57,96.59,96.63,null,95.80,95.57,94.72,94.16,95.35,95.05,93.68,93.26,93.10,94.11,95.51,93.65,91.68,93.91,93.04,93.58,95.74,94.41,95.30,96.32,94.96,95.60,95.60,93.82,95.46,95.59,95.00,94.33,93.26,94.64,95.13,94.86,95.07,null]},
+  {label:'Total Breach %',        type:'pct',   hb:false, g:5,    a:7,    data:[4.96,3.89,4.94,4.85,4.20,3.57,2.95,2.79,2.64,3.49,3.36,4.43,3.41,3.37,null,4.20,4.43,5.28,5.84,4.65,4.95,6.32,6.74,6.90,5.89,4.49,6.35,8.32,6.09,6.96,6.42,4.26,5.59,4.70,3.68,5.04,4.40,4.40,6.18,4.54,4.41,5.00,5.67,6.44,6.43,4.87,3.93,3.60,null]},
+  {label:'Ekart Breach % (Pre-Attribution)',  type:'pct', hb:false, g:1.5, a:2.2, data:[1.39,1.25,1.89,1.33,0.69,1.49,0.84,0.79,0.72,0.88,1.06,1.76,1.09,0.89,null,1.24,1.19,1.47,2.09,1.22,1.50,2.11,1.98,1.52,2.06,1.31,1.64,1.83,2.20,2.73,1.85,1.38,2.29,1.71,1.16,1.29,1.33,1.65,2.53,1.10,1.32,1.41,1.31,2.76,2.82,2.03,null,null,null]},
+  {label:'Seller Breach % (Pre-Attribution)',type:'pct', hb:false, g:3,   a:5,   data:[3.57,2.64,3.04,3.51,3.51,2.07,2.11,2.00,1.92,2.61,2.30,2.67,2.32,2.48,null,2.96,3.24,3.80,3.75,3.43,3.44,4.21,4.76,5.38,3.83,3.19,4.71,6.49,3.90,4.23,4.57,2.88,3.30,2.99,2.51,3.75,3.06,2.75,3.65,3.44,3.10,3.59,4.35,3.68,3.61,2.85,null,null,null]},
+  {label:'Total Shipments',       type:'vol',   hb:null,  g:null, a:null, data:[74927,102465,51734,96314,92140,86507,86167,84808,101313,97285,105470,103906,109154,105757,0,72187,111349,131676,105866,94486,95379,52863,115043,104680,88799,91739,49133,121163,105434,103901,104871,97279,53408,118530,109862,101895,104870,97560,53984,118530,107614,104680,97470,53000,116250,105500,51200,117800,null]},
+  {label:'Total Picked',          type:'vol',   hb:null,  g:null, a:null, data:[60305,84110,42290,77791,74083,70783,70889,69896,84207,79556,86754,84400,89922,87037,0,59125,89873,108049,84264,75403,76264,42144,91815,83607,70994,75067,39985,96414,85146,83059,84672,79989,43541,97492,90279,82654,85379,79988,43300,96800,87614,84680,85470,null,null,null,null,null,null]},
+  {label:'Reservation',           type:'vol',   hb:null,  g:null, a:null, data:[63452,87513,44486,81753,77331,73402,73043,71900,86492,82434,89767,88309,93096,90074,0,61718,94038,114066,89490,79082,80233,44987,98447,89804,75436,77539,41997,102052,89008,87498,88477,81867,45117,99986,92513,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},
+  {label:'Cancellation & Returns',type:'vol',   hb:null,  g:null, a:null, data:[11475,14952,7248,14561,14809,13105,13124,12908,14821,14851,15703,15597,16058,15683,0,10469,17311,17610,16376,15404,15146,7876,16596,14876,13363,13139,6437,15999,14762,14629,14393,13735,7288,16231,16137,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},
+  {label:'Not Marked RTD',        type:'count', hb:false, g:450,  a:700,  data:[1109,687,331,528,486,546,436,370,396,367,382,352,420,365,0,319,397,556,736,447,604,567,1040,2850,878,572,401,817,993,825,584,517,407,864,603,662,605,646,340,659,948,1220,1071,629,556,532,635,467,null]},
+  {label:'Delay Dispatch',        type:'count', hb:false, g:110,  a:155,  data:[156,162,65,111,130,107,96,108,167,85,105,102,103,110,0,69,98,125,135,123,134,88,168,140,166,170,87,171,145,140,145,142,87,166,176,152,159,143,90,171,163,156,148,null,null,null,null,null,null]},
+  {label:'RBND Breach %',         type:'pct',   hb:false, g:0.6,  a:1.0,  data:[1.75,0.78,0.74,0.64,0.63,0.74,0.60,0.51,0.46,0.45,0.43,0.40,0.45,0.41,null,0.52,0.42,0.49,0.82,0.57,0.75,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},
+  {label:'Late Mark RTD %',       type:'pct',   hb:false, g:1.5,  a:2.0,  data:[2.25,1.99,1.24,1.24,2.19,1.23,1.48,1.45,2.38,0.68,1.21,1.01,0.95,0.76,null,0.97,0.80,0.98,1.14,1.76,1.55,1.62,1.19,1.81,1.64,1.38,1.24,1.39,1.82,1.53,1.48,1.35,1.12,1.58,1.49,1.41,1.32,1.44,1.05,1.46,1.52,1.40,1.28,null,null,null,null,null,null]},
+  {label:'Delay Dispatch %',      type:'pct',   hb:false, g:0.35, a:0.5,  data:[0.57,0.38,0.29,0.39,0.33,0.35,0.46,0.27,0.37,0.16,0.35,0.35,0.22,0.36,null,0.46,0.23,0.32,0.37,0.37,0.45,0.74,0.36,0.35,0.43,0.48,0.32,0.44,0.38,0.36,0.37,0.40,0.29,0.43,0.42,0.38,0.36,0.41,0.28,0.42,0.40,0.38,0.35,null,null,null,null,null,null]},
+  {label:'Reattempt %',           type:'pct',   hb:false, g:2.5,  a:3.5,  data:[1.82,1.85,2.30,2.87,2.88,1.33,1.51,1.48,1.46,2.17,1.87,2.27,1.87,2.08,null,2.45,2.82,3.31,2.93,2.86,2.69,2.95,3.70,2.20,2.75,2.65,4.64,3.96,3.22,3.82,3.61,2.37,3.19,2.85,2.60,3.29,2.91,2.72,4.25,3.32,2.94,3.09,3.21,null,null,null,null,null,null]},
+  {label:'Seller Reattempt %',    type:'pct',   hb:false, g:2.0,  a:3.0,  data:[1.20,1.33,1.73,1.84,1.88,1.03,1.10,1.04,1.08,1.36,1.38,1.67,1.21,1.46,null,1.42,2.04,2.40,2.15,2.19,2.19,1.94,2.50,1.57,1.75,1.62,3.26,3.27,2.34,2.74,2.97,1.55,1.84,1.57,1.44,2.32,1.78,1.85,2.93,2.18,1.89,1.93,2.10,null,null,null,null,null,null]},
+  {label:'Not-Attempted %',       type:'pct',   hb:false, g:35,   a:42,   data:[43.2,40.3,45.1,31.7,19.4,52.9,35.6,34.7,33.2,28.9,36.0,43.7,36.8,30.0,null,33.6,29.7,30.8,41.6,30.0,35.8,41.7,34.8,40.9,43.6,34.7,30.3,24.2,44.0,45.2,32.1,37.8,48.7,44.4,38.4,30.1,35.4,39.7,46.3,36.1,33.8,34.7,37.2,null,null,null,null,null,null]},
+];
+
+const HUB_DATA = [
+  {hub:'PHH_SWP',  vals:[3867,4177,1761,4557,3528,3181,3232,3952,4902,4268,4540,4165,4345,4482,0,2184,4594,4798,4846,3689,3856,2055,5250,4013,3717,3988,1686,4656,4021,3760,3903,3686,2015,4463,4127,3950,4067,3780,2100,4380,4100,3980,4050,null,null,null,null,null,null]},
+  {hub:'PHH_STV',  vals:[6804,7110,4607,6854,6706,6409,6231,5039,7348,6975,7284,7382,7630,6994,0,5109,6985,9644,7227,5011,7310,3342,7738,7784,6328,7224,3818,7796,7210,6908,7104,6856,3921,7912,7380,7101,7259,6904,3820,7756,7412,7202,7396,null,null,null,null,null,null]},
+  {hub:'PHH_MRD',  vals:[977,2447,992,1959,1981,1777,1827,1023,1984,1868,1954,1871,2156,1351,0,1307,2165,2261,1476,1655,768,1057,2115,1886,464,497,1766,4298,242,1450,1820,1654,851,2120,1987,1890,1965,1720,880,2080,1920,1856,1900,null,null,null,null,null,null]},
+  {hub:'PHH_VSI',  vals:[719,1098,849,1031,1050,960,971,1022,1357,1316,1279,1227,1050,1060,0,601,750,930,900,663,914,583,976,1022,595,870,701,1177,1264,1282,1190,1105,628,1210,1152,1087,1128,1060,580,1198,1143,1090,1115,null,null,null,null,null,null]},
+  {hub:'PHH_GZB',  vals:[2618,3697,1878,3432,3315,3666,3653,3374,3507,3514,3776,3881,4100,3794,0,3213,3919,4887,4134,2907,3564,3051,4264,3786,3545,3638,2164,5423,4102,3952,4012,3760,2201,4380,4201,4012,4104,3801,2180,4301,4156,4023,4105,null,null,null,null,null,null]},
+  {hub:'PHH_CHN2', vals:[60,106,21,30,58,58,71,72,69,81,117,113,135,125,0,47,145,156,103,85,88,26,109,106,40,94,23,125,104,89,104,140,26,112,124,118,126,135,28,120,116,112,118,null,null,null,null,null,null]},
+  {hub:'PHH_MRT',  vals:[3439,4299,2275,3653,3609,3701,3433,2913,3454,3151,3903,3733,3845,3728,0,1855,3615,5402,3898,3432,2909,1458,3013,4363,3563,3519,1325,4416,3800,3620,3710,3485,1872,4012,3820,3640,3745,3521,1860,4010,3780,3615,3720,null,null,null,null,null,null]},
+  {hub:'PHH_BKK',  vals:[6810,5356,5522,7317,6950,5972,5758,7961,7497,7475,8571,8829,9138,10095,0,4866,7523,8371,7124,6330,6450,4352,8864,5697,5990,6148,4636,8225,7890,7604,7810,7320,4780,8450,8100,7750,7980,7500,4690,8310,8040,7820,7950,null,null,null,null,null,null]},
+  {hub:'PHH_AMD',  vals:[1265,1620,582,1821,1580,1419,1216,1315,1441,1367,1474,1544,1566,1716,0,1177,2085,3195,2285,1524,1917,759,2248,1875,1489,1801,868,2259,2100,2012,2076,1950,994,2187,2090,1985,2060,1930,985,2150,2085,2010,2065,null,null,null,null,null,null]},
+  {hub:'PHH_JLD1', vals:[2857,3527,654,3006,3598,3182,2830,2534,3396,2883,2805,2821,2781,3027,0,797,3247,3728,2898,2476,2715,154,3197,2443,2760,2701,85,3989,3210,3050,3120,2950,1460,3380,3260,3110,3200,3020,1480,3340,3215,3090,3185,null,null,null,null,null,null]},
+];
+
+// ══════════════════════════════════════════════════════════════
+// RAW DATA — columns + known unique values
+// ══════════════════════════════════════════════════════════════
+const RAW_COLS = [
+  {key:'date',            label:'Date'},
+  {key:'seller_id',       label:'Seller / Order ID'},
+  {key:'large_ph_name',   label:'PH Name'},
+  {key:'overall_status',  label:'Overall Status'},
+  {key:'issue_type',      label:'Issue Type'},
+  {key:'rtd_breach',      label:'RTD Breach Check'},
+  {key:'incubation',      label:'Incubation'},
+  {key:'ship_actual_na',  label:'Ship Actual NA'},
+  {key:'seller_holiday',  label:'Seller Holiday Flag'},
+  {key:'units',           label:'Sum of Units'},
+  {key:'not_picked_100',  label:'100% Not Picked'},
+  {key:'low_drr',         label:'Low DRR Sellers'},
+  {key:'attempt_flag',    label:'Attempt / Not'},
+  {key:'week_num',        label:'Week Num'},
+];
+
+// Known filter values (from sheet extraction)
+const KNOWN_VALS = {
+  date: DATES,
+  large_ph_name: ['PHH_SWP','PHH_STV','PHH_MRD','PHH_VSI','PHH_GZB','PHH_CHN2','PHH_MRT','PHH_BKK','PHH_AMD','PHH_JLD1','PHH_RJK','PHH_CHP','PHH_JAI','PHH_GOR2','PHH_NGL','PickupHub_KNL','PHH_SHN','PHH_ALG','PHH_SRD','PHH_NCR','PHH_HWH','PHH_FRD1','PHH_CGR','PHH_BRL','PHH_LUD1','PHH_NOD','PHH_MDL','PHH_GGN1','PHH_LKO2','PHH_IXC1','PHH_NCR2','PHH_BHI','PHH_UDAI','PHH_JLR','PHH_LUD','PHH_IDR','PHH_BIK','PHH_GRT','PickupHub_KNL1','PHH_ERD','PHH_BLP2','PHH_HLW1','PHH_KOL8','PHH_FTH','PHH_KOL10','PHH_DDN','PHH_RPR2'],
+  overall_status: ['Picked_Orders','NotPicked','Cancellation_and_returns','RTD_Not_Marked','Reservation'],
+  issue_type: ['seller issue','ekart issue','MP Biz'],
+  rtd_breach: ['FALSE','TRUE'],
+  incubation: ['(blank)','Incubation'],
+  ship_actual_na: ['NA','Not_NA'],
+  seller_holiday: ['(blank)','TRUE'],
+  units: ['1','2','3','4','5','6-10','11-20','21-50','50+'],
+  not_picked_100: ['NA','1'],
+  low_drr: ['-','Low_DRR Seller','(blank)'],
+  attempt_flag: ['NA','Attempted','Not_Attempted'],
+  week_num: ['W1','W4','W5','W9','W18','W19','W20','W21','W22','W23','W24','W25','W26','W50'],
+};
+
+// Raw data state
+let rawAll = generateSampleRaw(800);
+let rawFiltered = [...rawAll];
+let rawPage = 1;
+let RAW_PAGE_SIZE = 100;
+let rawSortKey = null, rawSortDir = 1;
+
+function generateSampleRaw(n){
+  const hubs = KNOWN_VALS.large_ph_name;
+  const statuses = KNOWN_VALS.overall_status;
+  const issues = KNOWN_VALS.issue_type;
+  const attempts = KNOWN_VALS.attempt_flag;
+  const lowdrr = KNOWN_VALS.low_drr;
+  const weeks = ['W18','W19','W20','W21','W22','W23','W24','W25'];
+  const rnd = a=>a[Math.floor(Math.random()*a.length)];
+  const rows=[];
+  for(let i=0;i<n;i++){
+    const st = rnd(statuses);
+    const sid = Array.from({length:16},()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+    const units = Math.floor(Math.random()*48)+1;
+    const wk = rnd(weeks);
+    const di = Math.floor(Math.random()*DATES.length);
+    rows.push({
+      date: DATES[di],
+      seller_id: sid,
+      large_ph_name: rnd(hubs),
+      overall_status: st,
+      issue_type: rnd(issues),
+      rtd_breach: st==='RTD_Not_Marked'?'TRUE':'FALSE',
+      incubation: (st==='NotPicked'&&Math.random()<.3)?'Incubation':'(blank)',
+      ship_actual_na: Math.random()<.5?'NA':'Not_NA',
+      seller_holiday: Math.random()<.05?'TRUE':'(blank)',
+      units: String(units),
+      not_picked_100: (st!=='Picked_Orders'&&Math.random()<.08)?'1':'NA',
+      low_drr: rnd(lowdrr),
+      attempt_flag: st==='Picked_Orders'?'NA':rnd(attempts),
+      week_num: wk,
+    });
+  }
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════════
+// METRICS INIT + RENDER
+// ══════════════════════════════════════════════════════════════
+function initMetrics(){
+  ['m-from','m-to'].forEach(id=>{
+    const s=document.getElementById(id);
+    DATES.forEach((d,i)=>{ const o=document.createElement('option');o.value=i;o.textContent=d;s.appendChild(o); });
+  });
+  renderMetrics();
+}
+
+function getMetricFilters(){
+  return {
+    from:document.getElementById('m-from').value,
+    to:document.getElementById('m-to').value,
+    mode:document.getElementById('m-mode').value,
+    mtype:document.getElementById('m-mtype').value,
+  };
+}
+
+function activeDateIdxs(f){
+  const fr=f.from!==''?+f.from:0;
+  const to=f.to!==''?+f.to:DATES.length-1;
+  return Array.from({length:to-fr+1},(_,i)=>fr+i);
+}
+
+function resetMetricFilters(){
+  ['m-from','m-to','m-mtype'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-mode').value='single';
+  renderMetrics();
+}
+
+// Returns 'row-green'/'row-amber'/'row-red'/'row-neutral' for a metric+value
+function metricRowClass(m, v){
+  if(v==null||m.hb==null) return 'row-neutral';
+  if(m.hb) return v>=m.g?'row-green':v>=m.a?'row-amber':'row-red';
+  return v<=m.g?'row-green':v<=m.a?'row-amber':'row-red';
+}
+// Returns 'cell-green'/'cell-amber'/'cell-red'/'cell-null'/'' for a metric+value
+function metricCellClass(m, v){
+  if(v==null) return 'cell-null';
+  if(m.hb==null) return '';
+  if(m.hb) return v>=m.g?'cell-green':v>=m.a?'cell-amber':'cell-red';
+  return v<=m.g?'cell-green':v<=m.a?'cell-amber':'cell-red';
+}
+
+function renderMetrics(){
+  const f=getMetricFilters();
+  const idxs=activeDateIdxs(f);
+  const showIdxs=(f.mode==='multi'||idxs.length>1)?idxs:[idxs[0]];
+  const mets=f.mtype==='pct'?METRICS.filter(m=>m.type==='pct'):f.mtype==='vol'?METRICS.filter(m=>m.type!=='pct'):METRICS;
+
+  // KPIs
+  const avg=arr=>{const v=idxs.map(i=>arr[i]).filter(x=>x!=null&&x>0);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
+  const sum=arr=>idxs.map(i=>arr[i]??0).reduce((s,x)=>s+x,0);
+  const pu=avg(METRICS[0].data), br=avg(METRICS[1].data), sh=sum(METRICS[4].data), pk=sum(METRICS[5].data), lr=avg(METRICS[11].data), re=avg(METRICS[13].data);
+  document.getElementById('m-kpis').innerHTML=`
+    <div class="kpi g"><div class="kl">Pickup %</div><div class="kv">${pu!=null?pu.toFixed(1)+'%':'—'}</div><div class="ks">${idxs.length>1?'avg selected':'selected date'}</div></div>
+    <div class="kpi r"><div class="kl">Total Breach %</div><div class="kv">${br!=null?br.toFixed(2)+'%':'—'}</div><div class="ks">avg breach</div></div>
+    <div class="kpi"><div class="kl">Total Shipments</div><div class="kv">${sh.toLocaleString()}</div><div class="ks">units</div></div>
+    <div class="kpi g"><div class="kl">Total Picked</div><div class="kv">${pk.toLocaleString()}</div><div class="ks">units picked</div></div>
+    <div class="kpi a"><div class="kl">Late Mark RTD %</div><div class="kv">${lr!=null?lr.toFixed(2)+'%':'—'}</div><div class="ks">avg</div></div>
+    <div class="kpi o"><div class="kl">Reattempt %</div><div class="kv">${re!=null?re.toFixed(2)+'%':'—'}</div><div class="ks">avg</div></div>`;
+
+  document.getElementById('m-label').textContent=`${DATES[idxs[0]]}${idxs.length>1?' – '+DATES[idxs[idxs.length-1]]:''}`;
+
+  // Metrics table header
+  const multi=showIdxs.length>1;
+  document.getElementById('m-thead').innerHTML='<tr><th style="min-width:220px">Metric</th>'+(multi?showIdxs.map(i=>`<th class="date-hdr">${DATES[i]}</th>`).join(''):'<th>Value</th><th>Status</th><th>Trend</th>')+'</tr>';
+
+  // Metrics table body — with conditional formatting
+  document.getElementById('m-tbody').innerHTML=mets.map(m=>{
+    const fmt=v=>v==null?'<span style="color:#ccc">—</span>':m.type==='pct'?v.toFixed(2)+'%':v.toLocaleString();
+    if(multi){
+      // Multi-date: cell-level coloring
+      return `<tr class="row-neutral"><td class="sticky-left">${m.label}</td>`+
+        showIdxs.map(i=>{const v=m.data[i];const cls=metricCellClass(m,v);return `<td class="${m.type==='pct'?'pct':'num'} ${cls}">${fmt(v)}</td>`;}).join('')+
+        '</tr>';
+    }
+    // Single-date: row-level coloring
+    const v=m.data[showIdxs[0]];
+    const rowCls=metricRowClass(m,v);
+    const badgeTxt=v==null?'N/A':m.hb==null?'Vol':m.hb?(v>=m.g?'Good':v>=m.a?'Watch':'Poor'):(v<=m.g?'Good':v<=m.a?'Watch':'High');
+    const badgeCls=badgeTxt==='Good'?'bg':badgeTxt==='Watch'?'ba':badgeTxt==='High'||badgeTxt==='Poor'?'br':'bn';
+    const badge=`<span class="b ${badgeCls}">${badgeTxt}</span>`;
+    const pts=idxs.map(i=>m.data[i]).filter(x=>x!=null&&x>0);
+    const mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||1;
+    const spark=pts.length>1?`<svg width="70" height="18"><polyline points="${pts.map((v,i)=>`${i/(pts.length-1)*68},${16-(v-mn)/rng*14}`).join(' ')}" fill="none" stroke="var(--blue)" stroke-width="1.5"/></svg>`:'';
+    return `<tr class="${rowCls}"><td class="sticky-left">${m.label}</td><td class="${m.type==='pct'?'pct':'num'}" style="font-weight:700;font-size:13px">${fmt(v)}</td><td>${badge}</td><td>${spark}</td></tr>`;
+  }).join('');
+
+  // Hub table
+  const hubMulti=showIdxs.length>1;
+  document.getElementById('h-thead').innerHTML='<tr><th>Hub</th>'+(hubMulti?showIdxs.map(i=>`<th class="date-hdr">${DATES[i]}</th>`).join('')+'<th>Total</th>':'<th>Shipments</th><th>Share %</th><th>Volume bar</th>')+'</tr>';
+  const sorted=[...HUB_DATA].sort((a,b)=>showIdxs.reduce((s,i)=>s+(b.vals[i]||0),0)-showIdxs.reduce((s,i)=>s+(a.vals[i]||0),0));
+  const grand=showIdxs.reduce((s,i)=>s+HUB_DATA.reduce((ss,h)=>ss+(h.vals[i]||0),0),0);
+  document.getElementById('h-tbody').innerHTML=sorted.map(h=>{
+    const tot=showIdxs.reduce((s,i)=>s+(h.vals[i]||0),0);
+    if(hubMulti) return `<tr><td class="sticky-left">${h.hub}</td>`+showIdxs.map(i=>`<td class="num">${(h.vals[i]||0).toLocaleString()}</td>`).join('')+`<td class="num" style="font-weight:700">${tot.toLocaleString()}</td></tr>`;
+    const v=h.vals[showIdxs[0]]||0;
+    const pct=grand>0?(v/grand*100).toFixed(1):'0.0';
+    const bw=grand>0?Math.max(2,Math.round(v/grand*90)):2;
+    return `<tr><td class="sticky-left">${h.hub}</td><td class="num">${v.toLocaleString()}</td><td class="pct">${pct}%</td><td><div style="height:8px;width:${bw}px;background:var(--blue);border-radius:2px"></div></td></tr>`;
+  }).join('');
+  document.getElementById('hub-label').textContent=`${HUB_DATA.length} hubs with volume data`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RAW DATA INIT + RENDER
+// ══════════════════════════════════════════════════════════════
+function initRaw(){
+  // Populate From/To date range filters (store index as value for ordering)
+  ['r-from','r-to'].forEach(id=>{
+    const s=document.getElementById(id);
+    DATES.forEach((d,i)=>{const o=document.createElement('option');o.value=i;o.textContent=d;s.appendChild(o);});
+  });
+  // Populate other filters from KNOWN_VALS
+  const map={
+    large_ph_name:'r-ph', overall_status:'r-status', issue_type:'r-issue',
+    rtd_breach:'r-rtd', incubation:'r-incub', ship_actual_na:'r-shipna',
+    seller_holiday:'r-holiday', not_picked_100:'r-notpicked',
+    low_drr:'r-lowdrr', attempt_flag:'r-attempt', week_num:'r-week',
+  };
+  Object.entries(map).forEach(([key,id])=>{
+    const s=document.getElementById(id);
+    (KNOWN_VALS[key]||[]).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});
+  });
+  // Units filter
+  const us=document.getElementById('r-units');
+  ['1','2','3','4','5','6-10','11-20','21-50','50+'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;us.appendChild(o);});
+  applyRawFilters();
+}
+
+function applyRawFilters(){
+  const fv=id=>document.getElementById(id).value;
+  const seller=fv('r-seller').trim().toLowerCase();
+  const rFrom=fv('r-from'), rTo=fv('r-to');
+  const filterByDate=rFrom!==''||rTo!=='';
+  const frIdx=rFrom!==''?+rFrom:0;
+  const toIdx=rTo!==''?+rTo:DATES.length-1;
+  const dateRange=DATES.slice(frIdx,toIdx+1);
+  const units=fv('r-units');
+  // Multi-select filters (empty array = All)
+  const ph=msGetValues('ms-ph'), status=msGetValues('ms-status');
+  const issue=msGetValues('ms-issue'), rtd=msGetValues('ms-rtd'), incub=msGetValues('ms-incub');
+  const shipna=msGetValues('ms-shipna'), holiday=msGetValues('ms-holiday');
+  const notpk=msGetValues('ms-notpicked'), lowdrr=msGetValues('ms-lowdrr');
+  const attempt=msGetValues('ms-attempt'), week=msGetValues('ms-week'), mpstatus=msGetValues('ms-mpstatus'), fulfill=msGetValues('ms-fulfill');
+
+  rawFiltered=rawAll.filter(r=>{
+    if(seller && !String(r.seller_id).toLowerCase().includes(seller)) return false;
+    if(filterByDate && !dateRange.includes(r.date)) return false;
+    if(ph.length     && !ph.includes(r.large_ph_name))       return false;
+    if(status.length && !status.includes(r.overall_status))  return false;
+    if(issue.length  && !issue.includes(r.issue_type))       return false;
+    if(rtd.length    && !rtd.includes(r.rtd_breach))         return false;
+    if(incub.length  && !incub.includes(r.incubation))       return false;
+    if(shipna.length && !shipna.includes(r.ship_actual_na))  return false;
+    if(holiday.length && !holiday.includes(r.seller_holiday)) return false;
+    if(notpk.length  && !notpk.includes(r.not_picked_100))  return false;
+    if(lowdrr.length && !lowdrr.includes(r.low_drr))        return false;
+    if(attempt.length && !attempt.includes(r.attempt_flag))  return false;
+    if(week.length   && !week.includes(r.week_num))          return false;
+    if(mpstatus.length && !mpstatus.includes(r.mp_status))   return false;
+    if(fulfill.length  && !fulfill.includes(r.fulfill_status)) return false;
+    if(units){
+      const u=+r.units;
+      if(units==='1'&&u!==1) return false;
+      if(units==='2'&&u!==2) return false;
+      if(units==='3'&&u!==3) return false;
+      if(units==='4'&&u!==4) return false;
+      if(units==='5'&&u!==5) return false;
+      if(units==='6-10'&&(u<6||u>10)) return false;
+      if(units==='11-20'&&(u<11||u>20)) return false;
+      if(units==='21-50'&&(u<21||u>50)) return false;
+      if(units==='50+'&&u<=50) return false;
+    }
+    return true;
+  });
+
+  // Raw KPI bar
+  const totalUnits=rawFiltered.reduce((s,r)=>s+(+r.units||0),0);
+  const uniqueSellers=new Set(rawFiltered.map(r=>r.seller_id)).size;
+  // 100% Not Picked
+  const notPickedRows=rawFiltered.filter(r=>{
+    const np=String(r.not_picked_100||'').toLowerCase();
+    return np.includes('not_picked')||np.includes('not picked')||np==='yes'||np==='1'||np==='true';
+  });
+  const notPickedSellers=new Set(notPickedRows.map(r=>r.seller_id)).size;
+  const notPickedUnits=notPickedRows.reduce((s,r)=>s+(+r.units||0),0);
+  // Low DRR
+  const lowDRRRows=rawFiltered.filter(r=>String(r.low_drr||'').toLowerCase().includes('low_drr')||String(r.low_drr||'').toLowerCase().includes('low drr'));
+  const lowDRRUnits=lowDRRRows.reduce((s,r)=>s+(+r.units||0),0);
+  const lowDRRSellers=new Set(lowDRRRows.map(r=>r.seller_id)).size;
+  // Issue type breakdown
+  const byIssue=(it)=>{const rs=rawFiltered.filter(r=>String(r.issue_type||'').toLowerCase().includes(it));return{units:rs.reduce((s,r)=>s+(+r.units||0),0),sellers:new Set(rs.map(r=>r.seller_id)).size};};
+  const sellerIssue=byIssue('seller');
+  const ekartIssue=byIssue('ekart');
+  // Overall status breakdown
+  const byStatus=(st)=>{const rs=rawFiltered.filter(r=>String(r.overall_status||'').toLowerCase().replace(/[_\s]/g,'').includes(st.replace(/[_\s]/g,'')));return{units:rs.reduce((s,r)=>s+(+r.units||0),0),sellers:new Set(rs.map(r=>r.seller_id)).size};};
+  const rtdNotMarked=byStatus('rtd_not_mark');
+  const notPickedStatus=byStatus('notpicked');
+  const sel=n=>`<div class="ks" style="margin-top:4px;border-top:1px solid #e8e8e8;padding-top:4px">👤 ${n.toLocaleString()} unique sellers</div>`;
+  document.getElementById('raw-kpis').innerHTML=`
+    <div class="kpi"><div class="kl">Filtered Rows</div><div class="kv">${rawFiltered.length.toLocaleString()}</div><div class="ks">records</div>${sel(uniqueSellers)}</div>
+    <div class="kpi g"><div class="kl">Sum of Units</div><div class="kv">${totalUnits.toLocaleString()}</div><div class="ks">total units</div>${sel(uniqueSellers)}</div>
+    <div class="kpi r"><div class="kl">100% Not Picked</div><div class="kv">${notPickedRows.length.toLocaleString()}</div><div class="ks">${notPickedUnits.toLocaleString()} units</div>${sel(notPickedSellers)}</div>
+    <div class="kpi a"><div class="kl">Low DRR Sellers</div><div class="kv">${lowDRRUnits.toLocaleString()}</div><div class="ks">units at risk</div>${sel(lowDRRSellers)}</div>
+    <div class="kpi" style="border-left-color:#e74c3c"><div class="kl">Seller Issue</div><div class="kv">${sellerIssue.units.toLocaleString()}</div><div class="ks">units</div>${sel(sellerIssue.sellers)}</div>
+    <div class="kpi" style="border-left-color:#8e44ad"><div class="kl">Ekart Issue</div><div class="kv">${ekartIssue.units.toLocaleString()}</div><div class="ks">units</div>${sel(ekartIssue.sellers)}</div>
+    <div class="kpi" style="border-left-color:#e67e22"><div class="kl">RTD Not Marked</div><div class="kv">${rtdNotMarked.units.toLocaleString()}</div><div class="ks">units</div>${sel(rtdNotMarked.sellers)}</div>
+    <div class="kpi" style="border-left-color:#c0392b"><div class="kl">Not Picked</div><div class="kv">${notPickedStatus.units.toLocaleString()}</div><div class="ks">units</div>${sel(notPickedStatus.sellers)}</div>`;
+
+  if(rawSortKey) rawFiltered.sort((a,b)=>{
+    const av=a[rawSortKey]??'',bv=b[rawSortKey]??'';
+    const an=parseFloat(av),bn=parseFloat(bv);
+    return (!isNaN(an)&&!isNaN(bn)?an-bn:String(av).localeCompare(String(bv)))*rawSortDir;
+  });
+
+  rawPage=1;
+  renderRawTable();
+  document.getElementById('raw-count').textContent=`${rawFiltered.length.toLocaleString()} rows`;
+}
+
+function resetRawFilters(){
+  ['r-from','r-to','r-units'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('r-seller').value='';
+  ['ms-ph','ms-status','ms-issue','ms-rtd','ms-incub','ms-shipna','ms-holiday','ms-notpicked','ms-lowdrr','ms-attempt','ms-week','ms-mpstatus','ms-fulfill'].forEach(id=>msReset(id));
+  applyRawFilters();
+}
+
+function renderRawTable(){
+  const nodata=document.getElementById('raw-nodata');
+  const start=(rawPage-1)*RAW_PAGE_SIZE;
+  const page=rawFiltered.slice(start,start+RAW_PAGE_SIZE);
+  document.getElementById('raw-table-label').textContent=`Showing ${Math.min(start+1,rawFiltered.length)}–${Math.min(start+RAW_PAGE_SIZE,rawFiltered.length)} of ${rawFiltered.length.toLocaleString()}`;
+
+  // Header
+  document.getElementById('raw-thead').innerHTML='<tr>'+RAW_COLS.map(c=>{
+    const cls=rawSortKey===c.key?(rawSortDir===1?' asc':' desc'):'';
+    return `<th class="${cls}" onclick="rawSort('${c.key}')">${c.label}</th>`;
+  }).join('')+'</tr>';
+
+  if(page.length===0){ nodata.style.display='block'; document.getElementById('raw-tbody').innerHTML=''; }
+  else{
+    nodata.style.display='none';
+    document.getElementById('raw-tbody').innerHTML=page.map(r=>'<tr>'+RAW_COLS.map(c=>{
+      const v=r[c.key]??'';
+      if(c.key==='overall_status'){const m={'Picked_Orders':'bg','NotPicked':'br','Cancellation_and_returns':'ba','RTD_Not_Marked':'bp','Reservation':'bn'};return `<td><span class="b ${m[v]||'bn'}">${v}</span></td>`;}
+      if(c.key==='issue_type')    {const m={'seller issue':'ba','ekart issue':'bp','MP Biz':'bv'};return `<td>${v?`<span class="b ${m[v]||'bn'}">${v}</span>`:''}</td>`;}
+      if(c.key==='attempt_flag')  {const m={'Attempted':'bg','Not_Attempted':'br'};return `<td>${v&&m[v]?`<span class="b ${m[v]}">${v}</span>`:v}</td>`;}
+      if(c.key==='low_drr'&&v==='Low_DRR Seller') return `<td><span class="b ba">${v}</span></td>`;
+      if(c.key==='incubation'&&v==='Incubation') return `<td><span class="b bv">${v}</span></td>`;
+      if(c.key==='rtd_breach'&&v==='TRUE') return `<td><span class="b br">${v}</span></td>`;
+      if(c.key==='not_picked_100'&&v==='1') return `<td><span class="b br">✗</span></td>`;
+      if(c.key==='units') return `<td class="num">${v}</td>`;
+      return `<td>${v}</td>`;
+    }).join('')+'</tr>').join('');
+  }
+
+  // Pagination
+  const total=Math.ceil(rawFiltered.length/RAW_PAGE_SIZE);
+  const pgn=document.getElementById('raw-pgn');
+  if(total<=1){pgn.innerHTML='';return;}
+  const s=Math.max(1,rawPage-2),e=Math.min(total,rawPage+2);
+  pgn.innerHTML=`<span class="pgn-info">Page ${rawPage} of ${total}</span><div class="pgn-btns">
+    <button class="pb" ${rawPage===1?'disabled':''} onclick="rawGoPage(1)">«</button>
+    <button class="pb" ${rawPage===1?'disabled':''} onclick="rawGoPage(${rawPage-1})">‹</button>
+    ${Array.from({length:e-s+1},(_,i)=>s+i).map(p=>`<button class="pb ${p===rawPage?'active':''}" onclick="rawGoPage(${p})">${p}</button>`).join('')}
+    <button class="pb" ${rawPage===total?'disabled':''} onclick="rawGoPage(${rawPage+1})">›</button>
+    <button class="pb" ${rawPage===total?'disabled':''} onclick="rawGoPage(${total})">»</button>
+  </div>`;
+}
+
+function rawSort(key){rawSortKey===key?rawSortDir*=-1:(rawSortKey=key,rawSortDir=1);applyRawFilters();}
+function rawGoPage(n){rawPage=n;renderRawTable();}
+
+// CSV Upload — APPEND mode (daily D-1 incremental uploads)
+document.getElementById('csv-file').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const {rows}=parseCSVDebug(ev.target.result);
+      if(!rows.length){alert('No data found in file.');return;}
+
+      // --- Deduplicate by date: only add rows whose date isn't already loaded ---
+      const existingDates=new Set(rawAll.map(r=>r.date));
+      const newRows=rows.filter(r=>!existingDates.has(r.date));
+      const skipped=rows.length-newRows.length;
+
+      if(!newRows.length){
+        document.getElementById('upstat').textContent=
+          `⚠ 0 new rows — all ${rows.length.toLocaleString()} rows skipped (dates already loaded). Total: ${rawAll.length.toLocaleString()} rows.`;
+        document.getElementById('csv-file').value='';
+        return;
+      }
+
+      // Extend DATES array + metric columns if new dates appear beyond current range
+      const newDates=[...new Set(newRows.map(r=>r.date).filter(Boolean))].filter(d=>d&&!DATES.includes(d));
+      if(newDates.length) extendDates(newDates);
+
+      // Append
+      rawAll=[...rawAll,...newRows];
+      rawFiltered=[...rawAll];
+
+      // Persist new rows to IndexedDB
+      idbAppendRows(newRows);
+
+      // Refresh all multi-select dropdowns with combined data
+      refreshAllDropdowns();
+      applyRawFilters();
+      updateMetricsFromRaw();
+
+      // Status message
+      const isFirst=existingDates.size===0;
+      const skipNote=skipped>0?` (${skipped.toLocaleString()} skipped — dates already loaded)`:'';
+      document.getElementById('upstat').textContent= isFirst
+        ? `✓ Loaded ${newRows.length.toLocaleString()} rows from ${file.name}`
+        : `✓ Appended ${newRows.length.toLocaleString()} new rows${skipNote} · Total: ${rawAll.length.toLocaleString()} rows`;
+
+      // Hide sample data warning
+      const warn=document.querySelector('.upbar span[style*="c0392b"]');if(warn)warn.style.display='none';
+      document.getElementById('csv-file').value=''; // reset so same file can be re-uploaded if needed
+    }catch(err){alert('CSV parse error: '+err.message);}
+  };
+  reader.readAsText(file);
+});
+
+function updateMetricsFromRaw(){
+  if(!rawAll.length) return;
+  // Group by normalised date: track units by status
+  const byDate={};
+  rawAll.forEach(r=>{
+    const dt=r.date; if(!dt) return;
+    if(!byDate[dt]) byDate[dt]={pickedU:0,notPickedU:0,totalU:0,rows:0,pickedR:0};
+    const u=+r.units||0;
+    const st=String(r.overall_status||'').toLowerCase();
+    byDate[dt].totalU+=u;
+    byDate[dt].rows++;
+    if(st==='picked_orders'){byDate[dt].pickedU+=u;byDate[dt].pickedR++;}
+    if(st==='notpicked'||st.includes('not_picked')||st.includes('notpicked')) byDate[dt].notPickedU+=u;
+  });
+  // Fill null slots in METRICS from raw data
+  DATES.forEach((date,i)=>{
+    if(!date||!byDate[date]) return;
+    const d=byDate[date];
+    if(!d.totalU) return;
+    const pct=v=>+v.toFixed(2);
+    // Pickup %
+    if(METRICS[0].data[i]==null) METRICS[0].data[i]=pct(d.pickedU/d.totalU*100);
+    // Total Breach %
+    if(METRICS[1].data[i]==null) METRICS[1].data[i]=pct((1-d.pickedU/d.totalU)*100);
+    // Total Shipments (sum of units)
+    if(METRICS[4].data[i]==null||METRICS[4].data[i]===0) METRICS[4].data[i]=d.totalU;
+    // Total Picked (sum of picked units)
+    if(METRICS[5].data[i]==null||METRICS[5].data[i]===0) METRICS[5].data[i]=d.pickedU;
+  });
+  renderMetrics(); // refresh Metrics View with filled values
+}
+
+function getUnique(key){return[...new Set(rawAll.map(r=>r[key]??''))].filter(v=>v!==undefined&&v!==null).sort();}
+
+// ── Refresh all multi-select dropdowns from current rawAll ─────────
+function refreshAllDropdowns(){
+  msSetOptions('ms-ph',getUnique('large_ph_name'));
+  msSetOptions('ms-status',getUnique('overall_status'));
+  msSetOptions('ms-issue',getUnique('issue_type'));
+  msSetOptions('ms-rtd',getUnique('rtd_breach'));
+  msSetOptions('ms-incub',getUnique('incubation'));
+  msSetOptions('ms-shipna',getUnique('ship_actual_na'));
+  msSetOptions('ms-holiday',getUnique('seller_holiday'));
+  msSetOptions('ms-notpicked',getUnique('not_picked_100'));
+  msSetOptions('ms-lowdrr',getUnique('low_drr'));
+  msSetOptions('ms-attempt',getUnique('attempt_flag'));
+  msSetOptions('ms-week',getUnique('week_num'));
+  msSetOptions('ms-mpstatus',getUnique('mp_status'));
+  msSetOptions('ms-fulfill',getUnique('fulfill_status'));
+}
+
+// ── Dynamic date extension ─────────────────────────────────────────
+const MON_IDX={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function parseDMon(d){const[day,mon]=String(d).split('-');return(MON_IDX[mon]||0)*31+(+day||0);}
+
+function extendDates(newDates){
+  let changed=false;
+  newDates.forEach(d=>{
+    if(!d||DATES.includes(d)) return;
+    // find insertion point (sorted calendar order)
+    let idx=DATES.findIndex(x=>parseDMon(x)>parseDMon(d));
+    if(idx===-1) idx=DATES.length;
+    DATES.splice(idx,0,d);
+    METRICS.forEach(m=>m.data.splice(idx,0,null));
+    changed=true;
+  });
+  if(!changed) return;
+  // Rebuild date dropdowns
+  ['r-from','r-to','m-from','m-to'].forEach(id=>{
+    const s=document.getElementById(id);
+    const curVal=s.value;
+    while(s.options.length>1) s.remove(1);
+    DATES.forEach((d,i)=>{const o=document.createElement('option');o.value=i;o.textContent=d;s.appendChild(o);});
+    // restore selection if still valid
+    if(curVal!=='' && +curVal<DATES.length) s.value=curVal;
+  });
+  // Update default placeholder text
+  document.querySelector('#r-from option[value=""]').textContent=DATES[0]+' (Start)';
+  document.querySelector('#r-to option[value=""]').textContent=DATES[DATES.length-1]+' (End)';
+  document.querySelector('#m-from option[value=""]').textContent=DATES[0]+' (Start)';
+  document.querySelector('#m-to option[value=""]').textContent=DATES[DATES.length-1]+' (End)';
+}
+
+// ── IndexedDB persistence ──────────────────────────────────────────
+const IDB_NAME='pickup_dash_v1', IDB_STORE='rows';
+let _idb=null;
+
+function openIDB(cb){
+  if(_idb){cb(_idb);return;}
+  const req=indexedDB.open(IDB_NAME,1);
+  req.onupgradeneeded=e=>{
+    const d=e.target.result;
+    if(!d.objectStoreNames.contains(IDB_STORE)) d.createObjectStore(IDB_STORE,{autoIncrement:true});
+  };
+  req.onsuccess=e=>{_idb=e.target.result;cb(_idb);};
+  req.onerror=()=>cb(null);
+}
+
+function idbAppendRows(rows){
+  openIDB(d=>{
+    if(!d) return;
+    const tx=d.transaction(IDB_STORE,'readwrite');
+    const st=tx.objectStore(IDB_STORE);
+    rows.forEach(r=>st.add(r));
+  });
+}
+
+function idbLoadAll(cb){
+  openIDB(d=>{
+    if(!d){cb([]);return;}
+    const req=d.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).getAll();
+    req.onsuccess=e=>cb(e.target.result||[]);
+    req.onerror=()=>cb([]);
+  });
+}
+
+function idbClear(cb){
+  openIDB(d=>{
+    if(!d){cb&&cb();return;}
+    const tx=d.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).clear();
+    tx.oncomplete=()=>cb&&cb();
+  });
+}
+
+function loadSavedData(){
+  idbLoadAll(savedRows=>{
+    if(!savedRows||!savedRows.length) return;
+    // Collect any new dates beyond current DATES
+    const newDates=[...new Set(savedRows.map(r=>r.date).filter(Boolean))].filter(d=>!DATES.includes(d));
+    if(newDates.length) extendDates(newDates);
+    rawAll=savedRows;
+    rawFiltered=[...rawAll];
+    refreshAllDropdowns();
+    applyRawFilters();
+    updateMetricsFromRaw();
+    const warn=document.querySelector('.upbar span[style*="c0392b"]');if(warn)warn.style.display='none';
+    document.getElementById('upstat').textContent=`✓ ${rawAll.length.toLocaleString()} rows restored from last session`;
+  });
+}
+
+function clearData(){
+  if(!confirm('Clear all uploaded data? Dashboard will return to sample data.')) return;
+  idbClear(()=>{
+    rawAll=[];rawFiltered=[];
+    applyRawFilters();
+    const warn=document.querySelector('.upbar span[style*="c0392b"]');if(warn)warn.style.display='';
+    document.getElementById('upstat').textContent='All data cleared.';
+    document.getElementById('csv-file').value='';
+    // Reset metrics view null slots
+    METRICS.forEach(m=>m.data.forEach((_,i)=>{if(m.data[i]===null) m.data[i]=null;}));
+    renderMetrics();
+  });
+}
+
+// ── Multi-select widget ──────────────────────────────────────────
+document.addEventListener('click',()=>document.querySelectorAll('.ms-panel.open').forEach(p=>p.classList.remove('open')));
+
+function msToggle(id){
+  const panel=document.querySelector(`#${id} .ms-panel`);
+  const wasOpen=panel.classList.contains('open');
+  document.querySelectorAll('.ms-panel.open').forEach(p=>p.classList.remove('open'));
+  if(!wasOpen){panel.classList.add('open');panel.querySelector('.ms-search')?.focus();}
+}
+function msFilter(id,q){
+  const ql=q.toLowerCase();
+  document.querySelectorAll(`#${id} .ms-list .ms-item:not(.ms-all-item)`).forEach(el=>{el.style.display=el.textContent.toLowerCase().includes(ql)?'':'none';});
+}
+function msToggleAll(id,cb){
+  document.querySelectorAll(`#${id} .ms-list input[type=checkbox]`).forEach(c=>c.checked=cb.checked);
+  msUpdateBtn(id);
+}
+function msUpdateBtn(id){
+  const all=[...document.querySelectorAll(`#${id} .ms-list input[type=checkbox]:not(.ms-all-cb)`)];
+  const checked=all.filter(c=>c.checked);
+  const btn=document.querySelector(`#${id} .ms-btn`);
+  const allCb=document.querySelector(`#${id} .ms-all-cb`);
+  if(all.length===0||checked.length===all.length){btn.textContent='All ▾';if(allCb)allCb.checked=true;}
+  else{btn.textContent=`${checked.length} selected ▾`;if(allCb)allCb.checked=false;}
+}
+function msGetValues(id){
+  const all=[...document.querySelectorAll(`#${id} .ms-list input[type=checkbox]:not(.ms-all-cb)`)];
+  const checked=all.filter(c=>c.checked);
+  return(all.length===0||checked.length===all.length)?[]:checked.map(c=>c.value);
+}
+function msSetOptions(id,values){
+  const list=document.querySelector(`#${id} .ms-list`);
+  const allItem=list.querySelector('.ms-all-item');
+  [...list.querySelectorAll('.ms-item:not(.ms-all-item)')].forEach(el=>el.remove());
+  values.forEach(v=>{
+    const label=document.createElement('label');
+    label.className='ms-item';
+    const safe=String(v).replace(/"/g,'&quot;');
+    label.innerHTML=`<input type="checkbox" value="${safe}" checked onchange="msUpdateBtn('${id}')"> ${v||'(blank)'}`;
+    list.appendChild(label);
+  });
+  allItem.querySelector('input').checked=true;
+  msUpdateBtn(id);
+}
+function msReset(id){
+  document.querySelectorAll(`#${id} .ms-list input[type=checkbox]`).forEach(c=>c.checked=true);
+  msUpdateBtn(id);
+}
+
+const CSV_MAP={
+  'date':'date','dispatch_expected_date':'date',  // actual column name in sheet
+  'seller id':'seller_id','seller_id':'seller_id','order id':'seller_id',
+  'large_ph_name':'large_ph_name','ph name':'large_ph_name','ph_name':'large_ph_name',
+  'overall_status':'overall_status','overall status':'overall_status',
+  'issue_type':'issue_type','issue type':'issue_type',
+  'rtd breach check':'rtd_breach','rtd_breach':'rtd_breach',
+  'incubation':'incubation',
+  'ship actual na':'ship_actual_na','ship_actual_na':'ship_actual_na',
+  'seller_holiday_flag':'seller_holiday','seller holiday flag':'seller_holiday',
+  'sum of units':'units','units':'units',
+  '100% not picked':'not_picked_100',
+  'low drr sellers':'low_drr','low_drr sellers':'low_drr',
+  'attempt/not':'attempt_flag','attempt_flag':'attempt_flag',
+  'week num':'week_num','week_num':'week_num',
+  'fulfill_item_unit_status':'fulfill_status','mp_status':'mp_status',
+};
+
+// Date normalization: convert any date format → "D-Mon" to match DATES array
+const MON_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DATE_NORM=(()=>{
+  const m={};
+  DATES.forEach(d=>{
+    if(!d)return;
+    const [day,mon]=d.split('-');
+    const dayN=parseInt(day);
+    const monI=MON_NAMES.findIndex(x=>x.toLowerCase()===mon.toLowerCase());
+    if(monI<0)return;
+    const yr=2026;
+    const add=k=>{m[k.toLowerCase()]=d;};
+    const M0=String(monI+1).padStart(2,'0'), D0=String(dayN).padStart(2,'0');
+    add(d); add(D0+'-'+mon);
+    add(d+'-'+yr); add(D0+'-'+mon+'-'+yr);
+    add(`${yr}-${M0}-${D0}`);                      // 2026-06-24
+    add(`${D0}/${M0}/${yr}`); add(`${M0}/${D0}/${yr}`); // 24/06/2026 | 06/24/2026
+    // also without zero-padding (single-digit month/day)
+    add(`${dayN}/${monI+1}/${yr}`); add(`${monI+1}/${dayN}/${yr}`); // 24/6/2026 | 6/24/2026
+    add(`${mon} ${dayN}, ${yr}`);                  // Jun 24, 2026
+    add(`${dayN}-${M0}-${yr}`);
+    add(`${dayN} ${mon} ${yr}`);                   // 24 Jun 2026
+  });
+  return m;
+})();
+// Robust date normalizer: lookup first, then regex parse as fallback
+function normDate(v){
+  if(!v)return v;
+  const s=v.trim();
+  const hit=DATE_NORM[s.toLowerCase()];
+  if(hit)return hit;
+  // Fallback: try to extract day + month name from string
+  const MMAP={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  let m=s.match(/(\d{1,2})[-\s\/]([a-zA-Z]{3})(?:[-\s\/]\d{2,4})?/);
+  if(m){const mi=MMAP[m[2].toLowerCase()];if(mi!=null){const k=`${parseInt(m[1])}-${MON_NAMES[mi]}`;return DATE_NORM[k.toLowerCase()]||k;}}
+  // Fallback: numeric formats MM/DD/YYYY or DD/MM/YYYY
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    const [,a,b,y]=m; const yr=y.length===2?2000+parseInt(y):parseInt(y);
+    if(yr===2026){
+      // Try as MM/DD first (if a<=12 and b<=31 and b>12 → must be DD)
+      if(parseInt(b)>12){const k=`${parseInt(b)}-${MON_NAMES[parseInt(a)-1]}`;const r=DATE_NORM[k.toLowerCase()];if(r)return r;}
+      // Try as DD/MM
+      if(parseInt(a)>12){const k=`${parseInt(a)}-${MON_NAMES[parseInt(b)-1]}`;const r=DATE_NORM[k.toLowerCase()];if(r)return r;}
+      // Default try MM/DD
+      const k=`${parseInt(b)}-${MON_NAMES[parseInt(a)-1]}`;const r=DATE_NORM[k.toLowerCase()];if(r)return r;
+    }
+  }
+  return s;
+}
+
+function findHeaderRow(lines){
+  for(let i=0;i<Math.min(10,lines.length);i++){
+    const cells=parseLine(lines[i]).map(c=>c.trim());
+    const nonEmpty=cells.filter(c=>c.length>0).length;
+    if(nonEmpty>0&&nonEmpty>=cells.length*0.4) return i;
+  }
+  return 0;
+}
+function buildRows(lines,hi,km,hdrsLow){
+  return lines.slice(hi+1).map(l=>{
+    const vs=parseLine(l);
+    const r={};
+    hdrsLow.forEach((_,i)=>{r[km[i]]=(vs[i]??'').trim();});
+    if(r.date) r.date=normDate(r.date); // normalize date to D-Mon format
+    return r;
+  }).filter(r=>Object.values(r).some(v=>v));
+}
+function parseCSVDebug(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return{rows:[],headers:[],mapping:{}};
+  const hi=findHeaderRow(lines);
+  const headers=parseLine(lines[hi]).map(h=>h.trim());
+  const hdrsLow=headers.map(h=>h.toLowerCase());
+  const mapping={};hdrsLow.forEach((h,i)=>{mapping[i]=CSV_MAP[h]||h.replace(/[^a-z0-9_]/g,'_');});
+  const rows=buildRows(lines,hi,mapping,hdrsLow);
+  return{rows,headers,mapping};
+}
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const hi=findHeaderRow(lines);
+  const hdrs=parseLine(lines[hi]).map(h=>h.trim().toLowerCase());
+  const km={};hdrs.forEach((h,i)=>{km[i]=CSV_MAP[h]||h.replace(/[^a-z0-9_]/g,'_');});
+  return buildRows(lines,hi,km,hdrs);
+}
+function parseLine(l){const r=[];let c='',q=false;for(const ch of l){if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
+
+// Download CSV
+function downloadCSV(){
+  if(document.getElementById('pane-raw').classList.contains('active')) downloadRawCSV();
+  else downloadMetricsCSV();
+}
+function downloadMetricsCSV(){
+  const f=getMetricFilters(),idxs=activeDateIdxs(f);
+  const rows=[['Metric','Type',...idxs.map(i=>DATES[i])]];
+  METRICS.forEach(m=>rows.push([m.label,m.type,...idxs.map(i=>m.data[i]??'')]));
+  rows.push([]);rows.push(['Hub - Total Shipments','vol',...idxs.map(i=>DATES[i])]);
+  HUB_DATA.forEach(h=>rows.push([h.hub,'vol',...idxs.map(i=>h.vals[i]??'')]));
+  dlCSV(rows,`pickup_metrics_${DATES[idxs[0]]}_${DATES[idxs[idxs.length-1]]}.csv`);
+}
+function downloadRawCSV(){
+  const hdr=RAW_COLS.map(c=>c.label);
+  const rows=[hdr,...rawFiltered.map(r=>RAW_COLS.map(c=>r[c.key]??''))];
+  dlCSV(rows,`pickup_raw_filtered_${new Date().toISOString().slice(0,10)}.csv`);
+}
+function dlCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=name;a.click();
+}
+
+// Tab switching
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pane-'+name).classList.add('active');
+}
+
+// ── Start ────────────────────────────────────────────────────
+initMetrics();
+initRaw();
+loadSavedData(); // restore data from previous session (IndexedDB)
+</script>
+</body>
+</html>
