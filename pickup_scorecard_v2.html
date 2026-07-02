@@ -1035,24 +1035,23 @@ document.getElementById('csv-file').addEventListener('change', function(e) {
 });
 
 // Auto-fetch from Google Sheets (if published to web)
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/12pFk15rAKV5wx2_E64MGnGVEgq2KWd460vDgrXg8HU0/pub?gid=2121009471&single=true&output=csv';
-// CORS proxies — tried in order until one works
-const PROXIES = [
-  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://cors-anywhere.herokuapp.com/${u}`,
-];
+// Google Apps Script web app URL (serves CSV with CORS headers)
+const SHEET_URL = 'https://script.google.com/a/macros/flipkart.com/s/AKfycbxpynKDFOUEOPOyYmBYGbHaAfBizYRaprUs1nAIpNqt_BAo4bDd9Vmod8lqqg2--8j_wg/exec';
 
 async function tryFetch(url) {
-  // Try direct first
+  // Try direct fetch first
   try {
-    const r = await fetch(url, {credentials:'omit', redirect:'follow'});
+    const r = await fetch(url, {redirect:'follow'});
     if (r.ok) { const t = await r.text(); if (t && t.length > 50) return t; }
   } catch(e) {}
-  // Try each proxy
-  for (const proxy of PROXIES) {
+  // Fallback: try with no-cors mode via proxy
+  const proxies = [
+    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+  for (const proxy of proxies) {
     try {
-      const r = await fetch(proxy(url), {credentials:'omit', redirect:'follow'});
+      const r = await fetch(proxy(url), {redirect:'follow'});
       if (r.ok) { const t = await r.text(); if (t && t.length > 50) return t; }
     } catch(e) {}
   }
