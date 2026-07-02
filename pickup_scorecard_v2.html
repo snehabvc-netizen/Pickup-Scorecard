@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Large-NFBF Pickup Score Card</title>
+<style>
+:root{--blue:#2874f0;--green:#2e7d32;--red:#c62828;--amber:#e65100;--orange:#fb641b;--bg:#f1f3f6;--card:#fff;--bd:#e0e0e0;--txt:#212121;--muted:#757575;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:13px;}
+/* Header */
+.hdr{background:var(--blue);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
+.hdr h1{font-size:16px;font-weight:700;}.hdr small{opacity:.75;font-size:11px;display:block;margin-top:2px;}
+/* Tabs */
+.tabs{background:#fff;border-bottom:2px solid var(--bd);display:flex;padding:0 20px;}
+.tab{padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--muted);transition:.15s;}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tpane{display:none;}.tpane.active{display:block;}
+/* Upload bar */
+.upbar{background:#fff3e0;border-bottom:2px solid var(--orange);padding:8px 16px;display:flex;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap;}
+.upbar label{background:var(--blue);color:#fff;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:12px;white-space:nowrap;}
+.upbar label:hover{background:#1a5dc8;}.upbar input{display:none;}
+.upbtn{border:none;border-radius:4px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:600;}
+#upstat{color:var(--green);font-weight:600;margin-left:auto;font-size:11px;}
+/* Filter panel */
+.fpanel{background:#fff;border-bottom:1px solid var(--bd);padding:10px 16px;}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.fg label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.4px;display:block;margin-bottom:3px;}
+.fg select,.fg input[type=text]{width:100%;height:30px;padding:0 8px;border:1px solid var(--bd);border-radius:3px;font-size:12px;background:#fff;cursor:pointer;}
+.fg select:focus,.fg input:focus{outline:none;border-color:var(--blue);}
+.factions{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.btn{height:30px;padding:0 14px;border:none;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-p{background:var(--blue);color:#fff;}.btn-r{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+.btn-d{background:var(--green);color:#fff;}
+/* Multi-select dropdown */
+.ms-wrap{position:relative;width:100%;}
+.ms-btn{width:100%;text-align:left;background:#fff;border:1px solid #d0d0d0;border-radius:3px;padding:5px 9px;cursor:pointer;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;height:30px;}
+.ms-btn:hover{border-color:#999;}
+.ms-panel{display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:3000;background:#fff;border:1px solid #bbb;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.18);min-width:200px;max-width:300px;}
+.ms-panel.open{display:block;}
+.ms-search{width:100%;padding:7px 10px;border:none;border-bottom:1px solid #eee;font-size:12px;outline:none;}
+.ms-list{max-height:200px;overflow-y:auto;}
+.ms-item{display:flex;align-items:center;gap:7px;padding:5px 10px;font-size:12px;cursor:pointer;user-select:none;}
+.ms-item:hover{background:#f0f4ff;}
+.ms-item input[type=checkbox]{cursor:pointer;accent-color:var(--blue);}
+.ms-foot{padding:5px 8px;border-top:1px solid #eee;display:flex;gap:6px;}
+.ms-foot button{flex:1;padding:4px;font-size:11px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#f5f5f5;}
+.ms-foot button:first-child{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600;}
+/* Metrics table */
+.sec{padding:10px 16px 4px;display:flex;align-items:center;justify-content:space-between;}
+.sec h2{font-size:13px;font-weight:700;color:var(--blue);}
+.sec span{font-size:11px;color:var(--muted);}
+.tc{margin:0 16px 12px;background:var(--card);border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden;}
+.twrap{overflow-x:auto;max-height:500px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:#f5f5f5;padding:7px 10px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:#555;white-space:nowrap;position:sticky;top:0;z-index:2;border-bottom:2px solid var(--bd);cursor:pointer;user-select:none;}
+th.date-hdr{background:var(--blue)!important;color:#fff!important;}
+td{padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap;}
+tr:last-child td{border:none;}
+td.sticky-left{font-weight:600;background:#fafafa;position:sticky;left:0;z-index:1;min-width:220px;border-right:1px solid var(--bd);}
+td.num{text-align:right;font-family:monospace;}
+td.pct{text-align:right;}
+/* Row coloring */
+tr.rg td{background:#f0faf0!important;}tr.rg td.sticky-left{background:#e0f5e0!important;border-left:4px solid #2e7d32;}
+tr.ra td{background:#fffbf0!important;}tr.ra td.sticky-left{background:#fff3e0!important;border-left:4px solid #f57c00;}
+tr.rr td{background:#fff5f5!important;}tr.rr td.sticky-left{background:#ffebee!important;border-left:4px solid #c62828;}
+tr.rn td.sticky-left{border-left:4px solid #e0e0e0;}
+tr.rct td{background:#fafafa!important;font-style:italic;}tr.rct td.sticky-left{border-left:4px solid #ccc;padding-left:28px!important;font-weight:400;color:#888;}
+tr.rdelta td{background:#eef3ff!important;font-style:italic;}tr.rdelta td.sticky-left{border-left:4px solid #7986cb;padding-left:28px!important;font-weight:400;color:#555;}
+tr.rsub td.sticky-left{padding-left:30px!important;font-weight:400;color:#555;border-left:4px solid #e0e0e0;}
+tr.rsechdr td{background:#e8eaf6!important;font-weight:700!important;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:#3949ab!important;border-top:2px solid #9fa8da!important;}
+tr.rsechdr td.sticky-left{border-left:4px solid #3949ab!important;}
+/* Cell coloring */
+td.cg{background:#e8f5e9!important;color:#1b5e20;font-weight:600;}
+td.ca{background:#fff8e1!important;color:#e65100;font-weight:600;}
+td.cr{background:#ffebee!important;color:#b71c1c;font-weight:600;}
+td.cn{background:#fafafa!important;color:#bbb;}
+/* KPI bar */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;padding:12px 16px;}
+.kpi{background:var(--card);border-radius:3px;padding:10px 13px;box-shadow:0 1px 3px rgba(0,0,0,.1);border-left:4px solid var(--blue);}
+.kpi.g{border-color:var(--green);}.kpi.r{border-color:var(--red);}.kpi.a{border-color:var(--amber);}.kpi.o{border-color:var(--orange);}
+.kl{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;letter-spacing:.4px;}
+.kv{font-size:20px;font-weight:700;margin-top:2px;}
+.ks{font-size:10px;color:var(--muted);margin-top:2px;}
+/* Pagination */
+.pgn{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--bd);font-size:12px;color:var(--muted);}
+.pgn-btns{display:flex;gap:3px;}
+.pgn-btns button{padding:3px 8px;border:1px solid var(--bd);border-radius:3px;background:#fff;cursor:pointer;font-size:11px;}
+.pgn-btns button.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+/* Legend */
+.legend{display:flex;gap:14px;align-items:center;padding:6px 16px;font-size:11px;background:#fff;border-bottom:1px solid var(--bd);}
+.ldot{width:12px;height:12px;border-radius:2px;display:inline-block;margin-right:4px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div><h1>📦 Large-NFBF Pickup Score Card</h1><small id="hdr-sub">May 1 – Jun 24, 2026</small></div>
+  <a id="dl-btn" href="#" onclick="downloadCSV();return false;" style="background:#fff;color:var(--blue);padding:7px 14px;border-radius:4px;font-weight:700;font-size:12px;text-decoration:none;">⬇ Download</a>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('metrics',this)">📊 Metrics View</div>
+  <div class="tab" onclick="switchTab('raw',this)">📋 Raw Data (RD)</div>
+</div>
+
+<!-- UPLOAD BAR -->
+<div class="upbar">
+  <label>📂 Upload CSV (D-1 Data)<input type="file" id="csv-file" accept=".csv"></label>
+  <span style="color:#c0392b;font-weight:600" id="sample-warn">⚠ Sample data shown. Upload your RD-Pickup Scorecard CSV.</span>
+  <button class="upbtn" onclick="autoFetch()" style="background:#27ae60;color:#fff;">🔄 Refresh from Sheet</button>
+  <button class="upbtn" onclick="clearAllData()" style="background:#c0392b;color:#fff;">🗑 Clear Data</button>
+  <span id="upstat"></span>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TAB 1 — METRICS VIEW
+════════════════════════════════════════ -->
+<div id="pane-metrics" class="tpane active">
+
+  <!-- Metric Filters (matching View sheet) -->
+  <div class="fpanel">
+    <div class="fgrid">
+      <div class="fg">
+        <label>Seller ID</label>
+        <input type="text" id="mf-seller" placeholder="Search seller..." oninput="renderMetrics()">
+      </div>
+      <div class="fg">
+        <label>Low DRR</label>
+        <select id="mf-lowdrr" onchange="renderMetrics()">
+          <option value="">All</option>
+          <option value="Low_DRR Seller">Low DRR Seller</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>100% Not Picked</label>
+        <select id="mf-notpicked" onchange="renderMetrics()">
+          <option value="">All</option>
+          <option value="1">100% Not Picked</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Incubation</label>
+        <select id="mf-incub" onchange="renderMetrics()">
+          <option value="">All</option>
+          <option value="Incubation">Incubation</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>From Date</label>
+        <select id="mf-from" onchange="renderMetrics()"><option value="">Start</option></select>
+      </div>
+      <div class="fg">
+        <label>To Date</label>
+        <select id="mf-to" onchange="renderMetrics()"><option value="">End</option></select>
+      </div>
+    </div>
+    <div class="factions">
+      <button class="btn btn-r" onclick="resetMetricFilters()">Reset Filters</button>
+      <span id="m-label" style="font-size:11px;color:var(--muted);margin-left:8px;"></span>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <span><span class="ldot" style="background:#e8f5e9;border:2px solid #2e7d32"></span>Good / On target</span>
+    <span><span class="ldot" style="background:#fff8e1;border:2px solid #f57c00"></span>Watch / Near breach</span>
+    <span><span class="ldot" style="background:#ffebee;border:2px solid #c62828"></span>Poor / Breach</span>
+    <span style="margin-left:auto;font-size:10px;color:#888">CT rows: click value to set comparison target</span>
+  </div>
+
+  <!-- Metrics Table -->
+  <div class="sec"><h2>Overall View</h2><span id="m-label2"></span></div>
+  <div class="tc"><div class="twrap">
+    <table><thead id="mt-head"></thead><tbody id="mt-body"></tbody></table>
+  </div></div>
+
+  <!-- PH Breakdown -->
+  <div class="sec"><h2>Hub Breakdown — Shipments (High → Low)</h2><span id="ph-label"></span></div>
+  <div class="tc"><div class="twrap">
+    <table><thead id="ph-head"></thead><tbody id="ph-body"></tbody></table>
+  </div></div>
+
+</div><!-- /pane-metrics -->
+
+<!-- ═══════════════════════════════════════
+     TAB 2 — RAW DATA
+════════════════════════════════════════ -->
+<div id="pane-raw" class="tpane">
+
+  <!-- Raw Filters -->
+  <div class="fpanel">
+    <div class="fgrid">
+      <div class="fg"><label>From Date</label><select id="rf-from" onchange="applyRaw()"><option value="">Start</option></select></div>
+      <div class="fg"><label>To Date</label><select id="rf-to" onchange="applyRaw()"><option value="">End</option></select></div>
+      <div class="fg"><label>Seller / Order ID</label><input type="text" id="rf-seller" placeholder="Search..." oninput="applyRaw()"></div>
+      <div class="fg"><label>PH Name</label><div class="ms-wrap" id="ms-ph"><button class="ms-btn" onclick="msOpen('ms-ph')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-ph',this.value)"><div class="ms-list" id="ms-ph-list"></div><div class="ms-foot"><button onclick="msApply('ms-ph')">Apply</button><button onclick="msClear('ms-ph')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Overall Status</label><div class="ms-wrap" id="ms-status"><button class="ms-btn" onclick="msOpen('ms-status')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-status',this.value)"><div class="ms-list" id="ms-status-list"></div><div class="ms-foot"><button onclick="msApply('ms-status')">Apply</button><button onclick="msClear('ms-status')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Issue Type</label><div class="ms-wrap" id="ms-issue"><button class="ms-btn" onclick="msOpen('ms-issue')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-issue',this.value)"><div class="ms-list" id="ms-issue-list"></div><div class="ms-foot"><button onclick="msApply('ms-issue')">Apply</button><button onclick="msClear('ms-issue')">Clear</button></div></div></div></div>
+      <div class="fg"><label>RTD Breach</label><div class="ms-wrap" id="ms-rtd"><button class="ms-btn" onclick="msOpen('ms-rtd')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-rtd',this.value)"><div class="ms-list" id="ms-rtd-list"></div><div class="ms-foot"><button onclick="msApply('ms-rtd')">Apply</button><button onclick="msClear('ms-rtd')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Incubation</label><div class="ms-wrap" id="ms-incub"><button class="ms-btn" onclick="msOpen('ms-incub')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-incub',this.value)"><div class="ms-list" id="ms-incub-list"></div><div class="ms-foot"><button onclick="msApply('ms-incub')">Apply</button><button onclick="msClear('ms-incub')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Ship Actual NA</label><div class="ms-wrap" id="ms-shipna"><button class="ms-btn" onclick="msOpen('ms-shipna')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-shipna',this.value)"><div class="ms-list" id="ms-shipna-list"></div><div class="ms-foot"><button onclick="msApply('ms-shipna')">Apply</button><button onclick="msClear('ms-shipna')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Seller Holiday</label><div class="ms-wrap" id="ms-holiday"><button class="ms-btn" onclick="msOpen('ms-holiday')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-holiday',this.value)"><div class="ms-list" id="ms-holiday-list"></div><div class="ms-foot"><button onclick="msApply('ms-holiday')">Apply</button><button onclick="msClear('ms-holiday')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Sum of Units</label><select id="rf-units" onchange="applyRaw()"><option value="">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6-10">6-10</option><option value="11-20">11-20</option><option value="21-50">21-50</option><option value="50+">50+</option></select></div>
+      <div class="fg"><label>100% Not Picked</label><div class="ms-wrap" id="ms-np100"><button class="ms-btn" onclick="msOpen('ms-np100')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-np100',this.value)"><div class="ms-list" id="ms-np100-list"></div><div class="ms-foot"><button onclick="msApply('ms-np100')">Apply</button><button onclick="msClear('ms-np100')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Low DRR Sellers</label><div class="ms-wrap" id="ms-lowdrr"><button class="ms-btn" onclick="msOpen('ms-lowdrr')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-lowdrr',this.value)"><div class="ms-list" id="ms-lowdrr-list"></div><div class="ms-foot"><button onclick="msApply('ms-lowdrr')">Apply</button><button onclick="msClear('ms-lowdrr')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Attempt / Not</label><div class="ms-wrap" id="ms-att"><button class="ms-btn" onclick="msOpen('ms-att')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-att',this.value)"><div class="ms-list" id="ms-att-list"></div><div class="ms-foot"><button onclick="msApply('ms-att')">Apply</button><button onclick="msClear('ms-att')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Week Num</label><div class="ms-wrap" id="ms-week"><button class="ms-btn" onclick="msOpen('ms-week')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-week',this.value)"><div class="ms-list" id="ms-week-list"></div><div class="ms-foot"><button onclick="msApply('ms-week')">Apply</button><button onclick="msClear('ms-week')">Clear</button></div></div></div></div>
+      <div class="fg"><label>MP Status</label><div class="ms-wrap" id="ms-mp"><button class="ms-btn" onclick="msOpen('ms-mp')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-mp',this.value)"><div class="ms-list" id="ms-mp-list"></div><div class="ms-foot"><button onclick="msApply('ms-mp')">Apply</button><button onclick="msClear('ms-mp')">Clear</button></div></div></div></div>
+      <div class="fg"><label>Fulfill Item Unit Status</label><div class="ms-wrap" id="ms-fulfill"><button class="ms-btn" onclick="msOpen('ms-fulfill')">All ▾</button><div class="ms-panel"><input class="ms-search" placeholder="Search..." oninput="msSearch('ms-fulfill',this.value)"><div class="ms-list" id="ms-fulfill-list"></div><div class="ms-foot"><button onclick="msApply('ms-fulfill')">Apply</button><button onclick="msClear('ms-fulfill')">Clear</button></div></div></div></div>
+    </div>
+    <div class="factions">
+      <button class="btn btn-p" onclick="applyRaw()">Apply</button>
+      <button class="btn btn-r" onclick="resetRaw()">Reset All</button>
+      <button class="btn btn-d" onclick="downloadCSV()">⬇ Download Filtered CSV</button>
+      <span id="raw-count" style="margin-left:auto;font-size:11px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- KPI Bar -->
+  <div class="kpis" id="raw-kpis"></div>
+
+  <!-- Raw Table -->
+  <div class="sec"><h2>Raw Data</h2><span id="raw-label"></span></div>
+  <div class="tc">
+    <div class="twrap"><table><thead id="raw-head"></thead><tbody id="raw-body"></tbody></table></div>
+    <div class="pgn">
+      <span id="pgn-info"></span>
+      <div class="pgn-btns" id="pgn-btns"></div>
+      <span>Rows/page: <select id="pg-size" onchange="rawPage=1;renderRaw()" style="padding:2px 4px;font-size:11px;"><option>50</option><option selected>100</option><option>200</option><option>500</option></select></span>
+    </div>
+  </div>
+
+</div><!-- /pane-raw -->
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════════
+// DATES — May 1 to Jun 24 2026 (Sundays excluded)
+// ══════════════════════════════════════════════════════════
+const DATES = ['1-May','2-May','3-May','4-May','5-May','6-May','7-May','8-May',
+  '9-May','11-May','12-May','13-May','14-May','15-May','16-May','17-May','18-May',
+  '19-May','20-May','21-May','22-May','24-May','25-May','26-May','27-May','28-May',
+  '29-May','30-May','1-Jun','2-Jun','3-Jun','4-Jun','5-Jun','6-Jun','8-Jun',
+  '9-Jun','10-Jun','11-Jun','12-Jun','13-Jun','15-Jun','16-Jun','17-Jun','18-Jun',
+  '19-Jun','20-Jun','21-Jun','22-Jun','23-Jun','24-Jun','25-Jun','26-Jun','27-Jun',
+  '28-Jun','29-Jun','30-Jun',
+  '1-Jul','2-Jul','3-Jul','4-Jul','5-Jul','6-Jul','7-Jul','8-Jul','9-Jul','10-Jul',
+  '11-Jul','12-Jul','13-Jul','14-Jul','15-Jul','16-Jul','17-Jul','18-Jul','19-Jul',
+  '20-Jul','21-Jul','22-Jul','23-Jul','24-Jul','25-Jul','26-Jul','27-Jul','28-Jul',
+  '29-Jul','30-Jul','31-Jul'];
+
+// ══════════════════════════════════════════════════════════
+// CSV column → internal key mapping
+// ══════════════════════════════════════════════════════════
+const CSV_MAP = {
+  'date':'date','dispatch_expected_date':'date',
+  'seller id':'seller_id','seller_id':'seller_id','order id':'seller_id',
+  'large_ph_name':'ph','ph name':'ph','ph_name':'ph',
+  'overall_status':'status','overall status':'status',
+  'issue_type':'issue','issue type':'issue',
+  'rtd breach check':'rtd','rtd_breach':'rtd',
+  'incubation':'incub',
+  'ship actual na':'ship_na','ship_actual_na':'ship_na',
+  'seller_holiday_flag':'holiday','seller holiday flag':'holiday',
+  'sum of units':'units','units':'units',
+  '100% not picked':'np100','not_picked_100':'np100',
+  'low drr sellers':'lowdrr','low_drr sellers':'lowdrr','low_drr':'lowdrr',
+  'attempt/not':'attempt','attempt_flag':'attempt',
+  'week num':'week','week_num':'week',
+  'mp_status':'mp','mp status':'mp',
+  'fulfill_item_unit_status':'fulfill','fulfil item unit status':'fulfill',
+};
+
+// ══════════════════════════════════════════════════════════
+// FALLBACK METRICS (View sheet values — 87 dates, May 1 – Jul 31)
+// Indices 0-45 = 1-May to 20-Jun | 46 = 21-Jun | 47-49 = 22-24 Jun
+// 50-55 = 25-30 Jun (52=27-Jun no data) | 56-86 = 1-31 Jul
+// ══════════════════════════════════════════════════════════
+const _N = null; // shorthand for null
+const FB = {
+  // Pickup %
+  pickup: [95.04,96.11,95.06,95.15,95.80,96.43,97.05,97.21,97.36,96.51,96.64,95.57,96.59,96.63,_N,95.80,95.57,94.72,94.16,95.35,95.05,93.68,93.26,93.10,94.11,95.51,93.65,91.68,93.91,93.04,93.58,95.74,94.41,95.30,96.32,94.96,95.60,95.60,93.82,95.46,95.59,95.00,94.33,93.26,94.64,95.13,
+           /*21-Jun*/93.57,/*22*/95.13,/*23*/96.07,/*24*/96.40,/*25*/95.73,/*26*/94.33,/*27*/_N,/*28*/94.85,/*29*/95.09,/*30*/95.59,
+           _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Total Breach %
+  breach: [4.96,3.89,4.94,4.85,4.20,3.57,2.95,2.79,2.64,3.49,3.36,4.43,3.41,3.37,_N,4.20,4.43,5.28,5.84,4.65,4.95,6.32,6.74,6.90,5.89,4.49,6.35,8.32,6.09,6.96,6.42,4.26,5.59,4.70,3.68,5.04,4.40,4.40,6.18,4.54,4.41,5.00,5.67,6.44,6.43,4.87,
+          6.43,4.87,3.93,3.60,4.27,5.67,_N,5.15,4.91,4.41,
+          _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Ekart Breach %
+  ekart:  [1.39,1.25,1.89,1.33,0.69,1.49,0.84,0.79,0.72,0.88,1.06,1.76,1.09,0.89,_N,1.24,1.19,1.47,2.09,1.22,1.50,2.11,1.98,1.52,2.06,1.31,1.64,1.83,2.20,2.73,1.85,1.38,2.29,1.71,1.16,1.29,1.33,1.65,2.53,1.10,1.32,1.41,1.31,2.76,2.82,2.03,
+          2.82,2.03,1.01,1.07,0.97,1.67,_N,1.66,1.60,0.82,
+          _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Seller Breach %
+  seller: [3.57,2.64,3.04,3.51,3.51,2.07,2.11,2.00,1.92,2.61,2.30,2.67,2.32,2.48,_N,2.96,3.24,3.80,3.75,3.43,3.44,4.21,4.76,5.38,3.83,3.19,4.71,6.49,3.90,4.23,4.57,2.88,3.30,2.99,2.51,3.75,3.06,2.75,3.65,3.44,3.10,3.59,4.35,3.68,3.61,2.85,
+          3.61,2.85,2.92,2.52,3.30,4.00,_N,3.49,3.31,3.59,
+          _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Total Shipments
+  shipments:[74927,102465,51734,96314,92140,86507,86167,84808,101313,97285,105470,103906,109154,105757,_N,72187,111349,131676,105866,94486,95379,52863,115043,104680,88799,91739,49133,121163,105434,103901,104871,97279,53408,118530,109862,101895,104870,97560,53984,118530,107614,104680,97470,53000,116250,105500,
+            43384,105535,95000,90691,90262,86066,_N,46484,113889,91245,
+            _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Total Picked
+  picked: [60305,84110,42290,77791,74083,70783,70889,69896,84207,79556,86754,84400,89922,87037,_N,59125,89873,108049,84264,75403,76264,42144,91815,83607,70994,75067,39985,96414,85146,83059,84672,79989,43541,97492,90279,82654,85379,79988,43300,96800,87614,84680,85470,_N,_N,_N,
+          34980,86134,78275,75464,74114,69889,_N,38465,94299,74972,
+          _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Reservation
+  reservation:[63452,87513,44486,81753,77331,73402,73043,71900,86492,82434,89767,88309,93096,90074,_N,61718,94038,114066,89490,79082,80233,44987,98447,89804,75436,77539,41997,102052,89008,87498,88477,81867,45117,99986,92513,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,
+              37384,90546,81476,78280,77417,74089,_N,40554,99168,78433,
+              _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Cancellation & Returns
+  cancel: [11475,14952,7248,14561,14809,13105,13124,12908,14821,14851,15703,15597,16058,15683,_N,10469,17311,17610,16376,15404,15146,7876,16596,14876,13363,13139,6437,15999,14762,14629,14393,13735,7288,16231,16137,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,
+          6000,14989,13524,12411,12845,11977,_N,5930,14721,12812,
+          _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Not Marked RTD
+  rtd_nmk:[1109,687,331,528,486,546,436,370,396,367,382,352,420,365,_N,319,397,556,736,447,604,567,1040,2850,878,572,401,817,993,825,584,517,407,864,603,662,605,646,340,659,948,1220,1071,629,556,532,
+           556,532,635,467,777,1089,_N,536,723,615,
+           _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // RBND Breach %
+  rbnd:   [1.75,0.78,0.74,0.64,0.63,0.74,0.60,0.51,0.46,0.45,0.43,0.40,0.45,0.41,_N,0.52,0.42,0.49,0.82,0.57,0.75,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,
+          1.49,0.59,0.78,0.60,1.00,1.47,_N,1.32,0.73,0.78,
+          _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Late Mark RTD %
+  late_rtd:[2.25,1.99,1.24,1.24,2.19,1.23,1.48,1.45,2.38,0.68,1.21,1.01,0.95,0.76,_N,0.97,0.80,0.98,1.14,1.76,1.55,1.62,1.19,1.81,1.64,1.38,1.24,1.39,1.82,1.53,1.48,1.35,1.12,1.58,1.49,1.41,1.32,1.44,1.05,1.46,1.52,1.40,1.28,_N,_N,_N,
+           1.61,1.30,1.39,1.34,1.63,1.80,_N,1.13,1.44,2.48,
+           _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Delay Dispatch %
+  delay_pct:[0.57,0.38,0.29,0.39,0.33,0.35,0.46,0.27,0.37,0.16,0.35,0.35,0.22,0.36,_N,0.46,0.23,0.32,0.37,0.37,0.45,0.74,0.36,0.35,0.43,0.48,0.32,0.44,0.38,0.36,0.37,0.40,0.29,0.43,0.42,0.38,0.36,0.41,0.28,0.42,0.40,0.38,0.35,_N,_N,_N,
+             _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,
+             _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+  // Reattempt %
+  reattempt:[1.82,1.85,2.30,2.87,2.88,1.33,1.51,1.48,1.46,2.17,1.87,2.27,1.87,2.08,_N,2.45,2.82,3.31,2.93,2.86,2.69,2.95,3.70,2.20,2.75,2.65,4.64,3.96,3.22,3.82,3.61,2.37,3.19,2.85,2.60,3.29,2.91,2.72,4.25,3.32,2.94,3.09,3.21,_N,_N,_N,
+             _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,
+             _N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N,_N],
+};
+
+// CT (Comparison Target) values — editable, stored in localStorage
+let CT = {};
+try { CT = JSON.parse(localStorage.getItem('pk_ct')||'{}'); } catch(e) {}
+function saveCT(key, di, val) {
+  if (!CT[key]) CT[key] = {};
+  const n = parseFloat(val);
+  if (isNaN(n)) delete CT[key][di]; else CT[key][di] = n;
+  localStorage.setItem('pk_ct', JSON.stringify(CT));
+  renderMetrics();
+}
+function getCT(key, di) { return CT[key]?.[di] ?? null; }
+
+// ══════════════════════════════════════════════════════════
+// RAW DATA STATE
+// ══════════════════════════════════════════════════════════
+let rawAll = [];
+let rawFiltered = [];
+let rawPage = 1;
+
+// Computed hub data (from raw uploads)
+let hubData = null; // null = no raw loaded
+
+// ══════════════════════════════════════════════════════════
+// DATE UTILITIES
+// ══════════════════════════════════════════════════════════
+const MON = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+const MON_NAME = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function normDate(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  // D-Mon-YYYY or D-Mon
+  let m = s.match(/^(\d{1,2})-([A-Za-z]{3})/i);
+  if (m) return `${+m[1]}-${m[2].charAt(0).toUpperCase()+m[2].slice(1,3).toLowerCase()}`;
+  // MM/DD/YYYY or M/D/YYYY
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${+m[2]}-${MON_NAME[+m[1]-1]}`;
+  // MM-DD-YYYY
+  m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
+  if (m) return `${+m[2]}-${MON_NAME[+m[1]-1]}`;
+  // YYYY-MM-DD
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${+m[3]}-${MON_NAME[+m[2]-1]}`;
+  return null;
+}
+
+function dMonSort(a, b) {
+  const parse = d => { const [day,mon]=d.split('-'); return (MON[mon]||0)*31+(+day||0); };
+  return parse(a) - parse(b);
+}
+
+function extendDates(newDates) {
+  let changed = false;
+  newDates.forEach(d => {
+    if (!d || DATES.includes(d)) return;
+    let idx = DATES.findIndex(x => dMonSort(x,d) > 0);
+    if (idx === -1) idx = DATES.length;
+    DATES.splice(idx, 0, d);
+    Object.keys(FB).forEach(k => { if (Array.isArray(FB[k])) FB[k].splice(idx,0,null); });
+    Object.keys(CT).forEach(k => {
+      const newEntry = {};
+      Object.entries(CT[k]||{}).forEach(([di,v]) => { newEntry[+di >= idx ? +di+1 : +di] = v; });
+      CT[k] = newEntry;
+    });
+    changed = true;
+  });
+  if (!changed) return;
+  refreshDateDropdowns();
+}
+
+function refreshDateDropdowns() {
+  ['rf-from','rf-to','mf-from','mf-to'].forEach(id => {
+    const s = document.getElementById(id);
+    if (!s) return;
+    const cur = s.value;
+    while (s.options.length > 1) s.remove(1);
+    DATES.forEach((d,i) => { const o=document.createElement('option');o.value=i;o.textContent=d;s.appendChild(o); });
+    // Keep current selection; if mf-from is unset, default to last 30 days
+    if (id === 'mf-from' && (cur === '' || cur === null)) {
+      s.value = Math.max(0, DATES.length - 30);
+    } else {
+      s.value = cur;
+    }
+  });
+  document.getElementById('hdr-sub').textContent = `${DATES[0]} – ${DATES[DATES.length-1]}, 2026`;
+}
+
+// ══════════════════════════════════════════════════════════
+// CSV PARSING
+// ══════════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/);
+  // Find header row (first row where ≥40% cells are non-empty)
+  let hdrIdx = 0;
+  for (let i = 0; i < Math.min(10, lines.length); i++) {
+    const cells = splitCSVLine(lines[i]);
+    const filled = cells.filter(c => c.trim()).length;
+    if (cells.length > 0 && filled / cells.length >= 0.4) { hdrIdx = i; break; }
+  }
+  const headers = splitCSVLine(lines[hdrIdx]).map(h => h.trim().toLowerCase());
+  const keys = headers.map(h => CSV_MAP[h] || h);
+  const rows = [];
+  for (let i = hdrIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cells = splitCSVLine(lines[i]);
+    const row = {};
+    keys.forEach((k, j) => { row[k] = (cells[j] || '').trim(); });
+    row.date = normDate(row.date);
+    if (!row.date && !row.seller_id) continue;
+    rows.push(row);
+  }
+  return rows;
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════
+// INDEXEDDB PERSISTENCE
+// ══════════════════════════════════════════════════════════
+const DB_NAME = 'pickup_v2', DB_STORE = 'rows';
+let _db = null;
+
+function openDB(cb) {
+  if (_db) { cb(_db); return; }
+  const req = indexedDB.open(DB_NAME, 1);
+  req.onupgradeneeded = e => {
+    const d = e.target.result;
+    if (!d.objectStoreNames.contains(DB_STORE)) d.createObjectStore(DB_STORE, {autoIncrement:true});
+  };
+  req.onsuccess = e => { _db = e.target.result; cb(_db); };
+  req.onerror = () => cb(null);
+}
+function dbAppend(rows) {
+  openDB(d => {
+    if (!d) return;
+    const tx = d.transaction(DB_STORE, 'readwrite');
+    const st = tx.objectStore(DB_STORE);
+    rows.forEach(r => st.add(r));
+  });
+}
+function dbLoad(cb) {
+  openDB(d => {
+    if (!d) { cb([]); return; }
+    const req = d.transaction(DB_STORE,'readonly').objectStore(DB_STORE).getAll();
+    req.onsuccess = e => cb(e.target.result || []);
+    req.onerror = () => cb([]);
+  });
+}
+function dbClear(cb) {
+  openDB(d => {
+    if (!d) { cb&&cb(); return; }
+    const tx = d.transaction(DB_STORE,'readwrite');
+    tx.objectStore(DB_STORE).clear();
+    tx.oncomplete = () => cb&&cb();
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// METRICS COMPUTATION FROM RAW DATA
+// ══════════════════════════════════════════════════════════
+function computeFromRaw(data) {
+  const byDate = {};
+  data.forEach(r => {
+    const dt = r.date; if (!dt) return;
+    if (!byDate[dt]) byDate[dt] = {
+      total:0, picked:0, notPicked:0, ekart:0, sellerIss:0,
+      reservation:0, cancel:0, rtdNmk:0,
+      np_na:0, np_att:0, np_natt:0,
+      sellers: new Set(), rows:0
+    };
+    const d = byDate[dt];
+    const u = +r.units || 0;
+    const st = String(r.status||'').toLowerCase().replace(/[\s_]/g,'');
+    const iss = String(r.issue||'').toLowerCase();
+    const att = String(r.attempt||'').toLowerCase().replace(/[\s_]/g,'');
+    d.total += u; d.rows++; d.sellers.add(r.seller_id);
+    if (st === 'pickedorders' || st === 'picked') {
+      d.picked += u;
+    } else if (st === 'notpicked') {
+      d.notPicked += u;
+      if (iss.includes('ekart')) d.ekart += u;
+      else if (iss.includes('seller')) d.sellerIss += u;
+      if (att === 'na' || att === '') d.np_na += u;
+      else if (att === 'attempted') d.np_att += u;
+      else if (att === 'notattempted') d.np_natt += u;
+    } else if (st === 'reservation') {
+      d.reservation += u;
+    } else if (st.includes('cancellation')) {
+      d.cancel += u;
+    } else if (st.includes('rtdnotmarked') || st.includes('rtdnot')) {
+      d.rtdNmk += u;
+    }
+  });
+  return byDate;
+}
+
+function computeHub(data) {
+  const byHub = {};
+  data.forEach(r => {
+    const hub = r.ph; if (!hub) return;
+    if (!byHub[hub]) byHub[hub] = {};
+    const di = DATES.indexOf(r.date); if (di < 0) return;
+    byHub[hub][di] = (byHub[hub][di]||0) + (+r.units||0);
+  });
+  return Object.entries(byHub).map(([hub,vals]) => ({
+    hub, vals: DATES.map((_,i) => vals[i]||0)
+  }));
+}
+
+// ══════════════════════════════════════════════════════════
+// MULTI-SELECT WIDGET
+// ══════════════════════════════════════════════════════════
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ms-wrap')) {
+    document.querySelectorAll('.ms-panel.open').forEach(p => p.classList.remove('open'));
+  }
+});
+function msOpen(id) {
+  const panel = document.querySelector(`#${id} .ms-panel`);
+  const wasOpen = panel.classList.contains('open');
+  document.querySelectorAll('.ms-panel.open').forEach(p => p.classList.remove('open'));
+  if (!wasOpen) { panel.classList.add('open'); panel.querySelector('.ms-search')?.focus(); }
+}
+function msSearch(id, q) {
+  const ql = q.toLowerCase();
+  document.querySelectorAll(`#${id}-list .ms-item`).forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(ql) ? '' : 'none';
+  });
+}
+function msApply(id) {
+  document.querySelector(`#${id} .ms-panel`).classList.remove('open');
+  const sel = msGetValues(id);
+  document.querySelector(`#${id} .ms-btn`).textContent = sel.length ? `${sel.length} selected ▾` : 'All ▾';
+  applyRaw();
+}
+function msClear(id) {
+  document.querySelectorAll(`#${id}-list input[type=checkbox]`).forEach(cb => cb.checked = true);
+  document.querySelector(`#${id} .ms-btn`).textContent = 'All ▾';
+  document.querySelector(`#${id} .ms-panel`).classList.remove('open');
+  applyRaw();
+}
+function msGetValues(id) {
+  const all = [...document.querySelectorAll(`#${id}-list .ms-item`)];
+  const checked = all.filter(el => el.querySelector('input').checked).map(el => el.querySelector('input').value);
+  if (checked.length === all.length || checked.length === 0) return [];
+  return checked;
+}
+function msSetOptions(id, values) {
+  const list = document.getElementById(`${id}-list`);
+  if (!list) return;
+  list.innerHTML = values.map(v =>
+    `<label class="ms-item"><input type="checkbox" value="${v}" checked><span>${v||'(blank)'}</span></label>`
+  ).join('');
+  document.querySelector(`#${id} .ms-btn`).textContent = 'All ▾';
+}
+function msResetAll() {
+  ['ms-ph','ms-status','ms-issue','ms-rtd','ms-incub','ms-shipna','ms-holiday',
+   'ms-np100','ms-lowdrr','ms-att','ms-week','ms-mp','ms-fulfill'].forEach(id => {
+    document.querySelectorAll(`#${id}-list input`).forEach(cb => cb.checked = true);
+    const btn = document.querySelector(`#${id} .ms-btn`);
+    if (btn) btn.textContent = 'All ▾';
+  });
+}
+function getUniq(key) {
+  return [...new Set(rawAll.map(r => r[key]||'').filter(Boolean))].sort();
+}
+function refreshAllDropdowns() {
+  msSetOptions('ms-ph', getUniq('ph'));
+  msSetOptions('ms-status', getUniq('status'));
+  msSetOptions('ms-issue', getUniq('issue'));
+  msSetOptions('ms-rtd', getUniq('rtd'));
+  msSetOptions('ms-incub', getUniq('incub'));
+  msSetOptions('ms-shipna', getUniq('ship_na'));
+  msSetOptions('ms-holiday', getUniq('holiday'));
+  msSetOptions('ms-np100', getUniq('np100'));
+  msSetOptions('ms-lowdrr', getUniq('lowdrr'));
+  msSetOptions('ms-att', getUniq('attempt'));
+  msSetOptions('ms-week', getUniq('week'));
+  msSetOptions('ms-mp', getUniq('mp'));
+  msSetOptions('ms-fulfill', getUniq('fulfill'));
+}
+
+// ══════════════════════════════════════════════════════════
+// METRICS VIEW RENDER
+// ══════════════════════════════════════════════════════════
+function getMetricFiltered() {
+  // Apply View sheet filters to rawAll, return filtered rows
+  const seller = document.getElementById('mf-seller').value.trim().toLowerCase();
+  const lowdrr = document.getElementById('mf-lowdrr').value;
+  const np100  = document.getElementById('mf-notpicked').value;
+  const incub  = document.getElementById('mf-incub').value;
+  if (!seller && !lowdrr && !np100 && !incub) return rawAll;
+  return rawAll.filter(r => {
+    if (seller && !String(r.seller_id||'').toLowerCase().includes(seller)) return false;
+    if (lowdrr && String(r.lowdrr||'') !== lowdrr) return false;
+    if (np100  && String(r.np100||'')  !== np100)  return false;
+    if (incub  && String(r.incub||'')  !== incub)  return false;
+    return true;
+  });
+}
+
+function renderMetrics() {
+  const fromIdx = +document.getElementById('mf-from').value || 0;
+  const toStr   = document.getElementById('mf-to').value;
+  const toIdx   = toStr !== '' ? +toStr : DATES.length - 1;
+  const cols    = DATES.slice(fromIdx, toIdx + 1).map((d,i) => ({d, i: fromIdx+i}));
+
+  document.getElementById('m-label').textContent =
+    `${DATES[fromIdx]} – ${DATES[toIdx]}`;
+  document.getElementById('m-label2').textContent =
+    `${cols.length} date columns`;
+
+  // Get computed metrics from raw data (with metric filters applied)
+  const mfData = getMetricFiltered();
+  const hasRaw = mfData.length > 0;
+  const byDate = hasRaw ? computeFromRaw(mfData) : {};
+
+  // Helper: get value for metric key/date index
+  const val = (fbKey, di, fn) => {
+    const d = byDate[DATES[di]];
+    if (d && fn) return fn(d);
+    return FB[fbKey] ? FB[fbKey][di] : null;
+  };
+
+  // Metric rows definition
+  const pct2 = v => v != null ? v.toFixed(2)+'%' : null;
+  const num  = v => v != null ? Math.round(v) : null;
+
+  const rows = [
+    // type: 'hdr' | 'pct' | 'ct' | 'delta' | 'vol' | 'sub' | 'sep'
+    {type:'pct', label:'Pickup %',                     key:'pickup', hb:true,  g:95,  a:93,
+     fn: d => d.total ? +(d.picked/d.total*100).toFixed(2) : null, fmt:pct2},
+    {type:'ct',  label:'CT',                           key:'pickup'},
+    {type:'delta',label:'Delta',                       key:'pickup', fmt:pct2},
+    {type:'pct', label:'Total Breach %',               key:'breach', hb:false, g:5,   a:7,
+     fn: d => d.total ? +((1-d.picked/d.total)*100).toFixed(2) : null, fmt:pct2},
+    {type:'ct',  label:'CT',                           key:'breach'},
+    {type:'delta',label:'Delta',                       key:'breach', fmt:pct2},
+    {type:'pct', label:'Ekart Breach % (Pre-Attribution)', key:'ekart', hb:false, g:1.5, a:2.2,
+     fn: d => d.total ? +(d.ekart/d.total*100).toFixed(2) : null, fmt:pct2},
+    {type:'ct',  label:'CT',                           key:'ekart'},
+    {type:'delta',label:'Delta',                       key:'ekart', fmt:pct2},
+    {type:'pct', label:'Seller Breach % (Pre-Attribution)', key:'seller', hb:false, g:3, a:5,
+     fn: d => d.total ? +(d.sellerIss/d.total*100).toFixed(2) : null, fmt:pct2},
+    {type:'ct',  label:'CT',                           key:'seller'},
+    {type:'delta',label:'Delta',                       key:'seller', fmt:pct2},
+    {type:'sep'},
+    {type:'vol', label:'Total Shipments',              key:'shipments', fn: d => d.total, fmt:num},
+    {type:'vol', label:'Total Picked',                 key:'picked',    fn: d => d.picked, fmt:num},
+    {type:'vol', label:'Reservation',                  key:'reservation', fn: d => d.reservation, fmt:num},
+    {type:'vol', label:'Cancellation & Returns',       key:'cancel',    fn: d => d.cancel, fmt:num},
+    {type:'vol', label:'Not Marked RTD',               key:'rtd_nmk',   fn: d => d.rtdNmk, fmt:num},
+    {type:'vol', label:'Total Not Picked',             key:'_np',       fn: d => d.notPicked, fmt:num, noFB:true},
+    {type:'sub', label:'3PL_No_Update',                key:'_np_na',    fn: d => d.np_na,    fmt:num, noFB:true},
+    {type:'sub', label:'Attempted',                    key:'_np_att',   fn: d => d.np_att,   fmt:num, noFB:true},
+    {type:'sub', label:'Not_Attempted',                key:'_np_natt',  fn: d => d.np_natt,  fmt:num, noFB:true},
+    {type:'sep'},
+    {type:'vol', label:'Sellers w/ ≥1 Order',          key:'_sellers',  fn: d => d.sellers.size, fmt:num, noFB:true},
+    {type:'vol', label:'# Absolute Order Count',       key:'_rows',     fn: d => d.rows, fmt:num, noFB:true},
+    {type:'sep'},
+    {type:'pct', label:'RBND Breach %',                key:'rbnd',  hb:false, g:0.6, a:1.0, fmt:pct2},
+    {type:'pct', label:'Late Mark RTD %',              key:'late_rtd',  hb:false, g:1.5, a:2.0, fmt:pct2},
+    {type:'pct', label:'Delay Dispatch %',             key:'delay_pct', hb:false, g:0.35,a:0.5, fmt:pct2},
+    {type:'pct', label:'Reattempt %',                  key:'reattempt', hb:false, g:2.5, a:3.5, fmt:pct2},
+  ];
+
+  // Resolve value for a row+date
+  function getV(row, di) {
+    if (row.type === 'ct') return getCT(row.key, di);
+    if (row.type === 'delta') {
+      const pRow = rows.find(r => r.key === row.key && r.type === 'pct');
+      const pv = getV(pRow, di);
+      const cv = getCT(row.key, di);
+      return pv != null ? (cv != null ? +(pv - cv).toFixed(2) : pv) : null;
+    }
+    const d = byDate[DATES[di]];
+    if (d && row.fn) return row.fn(d);
+    if (!row.noFB && FB[row.key]) return FB[row.key][di];
+    return null;
+  }
+
+  function cellColor(row, v) {
+    if (row.type !== 'pct' || v == null) return '';
+    if (row.hb) return v >= row.g ? 'cg' : v >= row.a ? 'ca' : 'cr';
+    return v <= row.g ? 'cg' : v <= row.a ? 'ca' : 'cr';
+  }
+  function rowColor(row, v) {
+    if (row.type !== 'pct' || v == null) return 'rn';
+    if (row.hb) return v >= row.g ? 'rg' : v >= row.a ? 'ra' : 'rr';
+    return v <= row.g ? 'rg' : v <= row.a ? 'ra' : 'rr';
+  }
+  function fmtV(row, v) {
+    if (v == null) return '<span style="color:#ccc">—</span>';
+    return (row.fmt || (x => x))(v);
+  }
+
+  const multi = cols.length > 1;
+
+  // Header
+  document.getElementById('mt-head').innerHTML =
+    '<tr><th style="min-width:230px;position:sticky;left:0;z-index:3;background:#f5f5f5">Metric</th>' +
+    (multi
+      ? cols.map(c => `<th class="date-hdr">${c.d}</th>`).join('')
+      : '<th>Value</th><th>Status</th>') +
+    '</tr>';
+
+  // Body
+  let html = '';
+  rows.forEach(row => {
+    if (row.type === 'sep') {
+      html += `<tr class="rsechdr"><td class="sticky-left" colspan="99" style="text-align:left;padding:5px 10px">─</td></tr>`;
+      return;
+    }
+    const isCT = row.type === 'ct';
+    const isDelta = row.type === 'delta';
+    const isSub = row.type === 'sub';
+    const special = isCT || isDelta;
+    const trCls = isCT ? 'rct' : isDelta ? 'rdelta' : isSub ? 'rsub rn' : 'rn';
+
+    if (multi) {
+      html += `<tr class="${trCls}"><td class="sticky-left">${isSub ? '↳ ' : ''}${row.label}</td>`;
+      cols.forEach(c => {
+        const v = getV(row, c.i);
+        const isPct = row.type === 'pct' || isDelta;
+        const cc = special ? '' : cellColor(row, v);
+        html += `<td class="${isPct ? 'pct' : 'num'} ${cc}" style="${special?'color:#666;background:inherit;font-size:11px':''}">${fmtV(row,v)}</td>`;
+      });
+      html += '</tr>';
+    } else {
+      const di = cols[0].i;
+      const v = getV(row, di);
+      const rc = special ? trCls : rowColor(row, v);
+      const isPct = row.type === 'pct' || isDelta;
+      const badge = special ? '' : (() => {
+        if (v == null) return '<span style="background:#f5f5f5;color:#999;padding:2px 7px;border-radius:10px;font-size:10px">N/A</span>';
+        if (row.type === 'vol' || row.type === 'sub') return '';
+        const t = row.hb ? (v>=row.g?'Good':v>=row.a?'Watch':'Poor') : (v<=row.g?'Good':v<=row.a?'Watch':'High');
+        const c = t==='Good'?'#2e7d32':t==='Watch'?'#e65100':'#c62828';
+        return `<span style="background:${c}22;color:${c};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${t}</span>`;
+      })();
+
+      const valueCell = isCT
+        ? `<td class="${isPct?'pct':'num'}" contenteditable="true"
+             style="cursor:text;border:1px dashed #ccc;color:#888;font-size:11px"
+             onblur="saveCT('${row.key}',${di},this.textContent.replace('%','').trim())"
+             title="Click to set comparison target">${v!=null?fmtV(row,v):'<span style=color:#ccc>click to set</span>'}</td>`
+        : `<td class="${isPct?'pct':'num'}" style="${special?'font-size:11px;color:#666':row.type==='vol'||row.type==='sub'?'':'font-weight:700;font-size:13px'}">${fmtV(row,v)}</td>`;
+
+      html += `<tr class="${rc} ${trCls}">
+        <td class="sticky-left" style="${special?'font-style:italic':''}">${isSub?'↳ ':''}${row.label}</td>
+        ${valueCell}<td>${badge}</td></tr>`;
+    }
+  });
+  document.getElementById('mt-body').innerHTML = html;
+
+  // Hub table
+  const active = hubData || [];
+  const sorted = [...active].sort((a,b) =>
+    cols.reduce((s,c) => s+(b.vals[c.i]||0),0) - cols.reduce((s,c) => s+(a.vals[c.i]||0),0)
+  );
+  const grand = cols.reduce((s,c) => s + active.reduce((ss,h) => ss+(h.vals[c.i]||0),0), 0);
+  document.getElementById('ph-head').innerHTML =
+    '<tr><th style="min-width:160px;position:sticky;left:0;z-index:3;background:#f5f5f5">PH Name</th>' +
+    (multi ? cols.map(c=>`<th class="date-hdr">${c.d}</th>`).join('')+'<th>Total</th>' :
+      '<th>Shipments</th><th>Share %</th><th>Bar</th>') + '</tr>';
+  document.getElementById('ph-body').innerHTML = sorted.map(h => {
+    const tot = cols.reduce((s,c) => s+(h.vals[c.i]||0),0);
+    if (multi) return `<tr><td class="sticky-left">${h.hub}</td>` +
+      cols.map(c=>`<td class="num">${(h.vals[c.i]||0).toLocaleString()}</td>`).join('') +
+      `<td class="num" style="font-weight:700">${tot.toLocaleString()}</td></tr>`;
+    const v = h.vals[cols[0].i]||0;
+    const pct = grand > 0 ? (v/grand*100).toFixed(1) : '0.0';
+    const bw = grand > 0 ? Math.max(2, Math.round(v/grand*100)) : 2;
+    return `<tr><td class="sticky-left">${h.hub}</td><td class="num">${v.toLocaleString()}</td>
+      <td class="pct">${pct}%</td>
+      <td><div style="height:8px;width:${bw}px;background:var(--blue);border-radius:2px"></div></td></tr>`;
+  }).join('');
+  document.getElementById('ph-label').textContent =
+    `${sorted.length} hubs · ${hubData ? 'live from uploads' : 'upload CSV to see live data'}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// RAW DATA VIEW RENDER
+// ══════════════════════════════════════════════════════════
+const RAW_COLS = [
+  {key:'date',label:'Date'},{key:'seller_id',label:'Seller / Order ID'},
+  {key:'ph',label:'PH Name'},{key:'status',label:'Overall Status'},
+  {key:'issue',label:'Issue Type'},{key:'rtd',label:'RTD Breach'},
+  {key:'incub',label:'Incubation'},{key:'ship_na',label:'Ship Actual NA'},
+  {key:'holiday',label:'Seller Holiday'},{key:'units',label:'Units'},
+  {key:'np100',label:'100% Not Picked'},{key:'lowdrr',label:'Low DRR'},
+  {key:'attempt',label:'Attempt/Not'},{key:'week',label:'Week Num'},
+  {key:'mp',label:'MP Status'},{key:'fulfill',label:'Fulfill Item Unit Status'},
+];
+
+function applyRaw() {
+  const seller = document.getElementById('rf-seller').value.trim().toLowerCase();
+  const fromV  = document.getElementById('rf-from').value;
+  const toV    = document.getElementById('rf-to').value;
+  const units  = document.getElementById('rf-units').value;
+  const fromI  = fromV !== '' ? +fromV : 0;
+  const toI    = toV   !== '' ? +toV   : DATES.length - 1;
+  const dateSet = new Set(DATES.slice(fromI, toI+1));
+
+  const ms = {
+    ph:      msGetValues('ms-ph'),
+    status:  msGetValues('ms-status'),
+    issue:   msGetValues('ms-issue'),
+    rtd:     msGetValues('ms-rtd'),
+    incub:   msGetValues('ms-incub'),
+    ship_na: msGetValues('ms-shipna'),
+    holiday: msGetValues('ms-holiday'),
+    np100:   msGetValues('ms-np100'),
+    lowdrr:  msGetValues('ms-lowdrr'),
+    attempt: msGetValues('ms-att'),
+    week:    msGetValues('ms-week'),
+    mp:      msGetValues('ms-mp'),
+    fulfill: msGetValues('ms-fulfill'),
+  };
+
+  const inRange = u => {
+    if (!units) return true;
+    const n = +u || 0;
+    if (units === '50+') return n > 50;
+    if (units.includes('-')) { const [a,b]=units.split('-').map(Number); return n>=a&&n<=b; }
+    return n === +units;
+  };
+
+  rawFiltered = rawAll.filter(r => {
+    if (seller && !String(r.seller_id||'').toLowerCase().includes(seller)) return false;
+    if ((fromV!==''||toV!=='') && !dateSet.has(r.date)) return false;
+    if (ms.ph.length     && !ms.ph.includes(r.ph))         return false;
+    if (ms.status.length && !ms.status.includes(r.status)) return false;
+    if (ms.issue.length  && !ms.issue.includes(r.issue))   return false;
+    if (ms.rtd.length    && !ms.rtd.includes(r.rtd))       return false;
+    if (ms.incub.length  && !ms.incub.includes(r.incub))   return false;
+    if (ms.ship_na.length&& !ms.ship_na.includes(r.ship_na)) return false;
+    if (ms.holiday.length&& !ms.holiday.includes(r.holiday)) return false;
+    if (ms.np100.length  && !ms.np100.includes(r.np100))   return false;
+    if (ms.lowdrr.length && !ms.lowdrr.includes(r.lowdrr)) return false;
+    if (ms.attempt.length&& !ms.attempt.includes(r.attempt)) return false;
+    if (ms.week.length   && !ms.week.includes(r.week))     return false;
+    if (ms.mp.length     && !ms.mp.includes(r.mp))         return false;
+    if (ms.fulfill.length&& !ms.fulfill.includes(r.fulfill)) return false;
+    if (!inRange(r.units)) return false;
+    return true;
+  });
+
+  rawPage = 1;
+  renderKPIs();
+  renderRaw();
+}
+
+function renderKPIs() {
+  const rf = rawFiltered;
+  const totalU = rf.reduce((s,r) => s+(+r.units||0), 0);
+  const sellers = new Set(rf.map(r=>r.seller_id));
+  const sub = (label,rows,color) => {
+    const u = rows.reduce((s,r)=>s+(+r.units||0),0);
+    const s = new Set(rows.map(r=>r.seller_id)).size;
+    return `<div class="kpi" style="border-left-color:${color}">
+      <div class="kl">${label}</div><div class="kv">${u.toLocaleString()}</div>
+      <div class="ks">${rows.length.toLocaleString()} orders · 👤 ${s.toLocaleString()} sellers</div></div>`;
+  };
+  const byStatus = s => rf.filter(r => String(r.status||'').toLowerCase().replace(/[\s_]/g,'').includes(s));
+  const byIssue  = s => rf.filter(r => String(r.issue||'').toLowerCase().includes(s));
+
+  document.getElementById('raw-kpis').innerHTML = `
+    <div class="kpi g"><div class="kl">Filtered Rows</div><div class="kv">${rf.length.toLocaleString()}</div>
+      <div class="ks">👤 ${sellers.size.toLocaleString()} unique sellers</div></div>
+    <div class="kpi"><div class="kl">Sum of Units</div><div class="kv">${totalU.toLocaleString()}</div>
+      <div class="ks">total units</div></div>
+    ${sub('100% Not Picked', rf.filter(r=>String(r.np100||'').includes('1')||String(r.np100||'').toLowerCase().includes('not_picked')), '#e65100')}
+    ${sub('Low DRR Sellers', rf.filter(r=>String(r.lowdrr||'').toLowerCase().includes('low_drr')), '#9c27b0')}
+    ${sub('Seller Issue', byIssue('seller'), '#c62828')}
+    ${sub('Ekart Issue', byIssue('ekart'), '#7986cb')}
+    ${sub('RTD Not Marked', byStatus('rtdnotmark'), '#f57c00')}
+    ${sub('Not Picked', byStatus('notpicked'), '#c62828')}
+  `;
+}
+
+function renderRaw() {
+  const pgSize = +document.getElementById('pg-size').value || 100;
+  const total  = rawFiltered.length;
+  const pages  = Math.ceil(total / pgSize) || 1;
+  rawPage = Math.min(rawPage, pages);
+  const slice  = rawFiltered.slice((rawPage-1)*pgSize, rawPage*pgSize);
+
+  document.getElementById('raw-label').textContent =
+    `Showing ${((rawPage-1)*pgSize+1).toLocaleString()}–${Math.min(rawPage*pgSize,total).toLocaleString()} of ${total.toLocaleString()}`;
+  document.getElementById('raw-count').textContent =
+    `${rawFiltered.length.toLocaleString()} / ${rawAll.length.toLocaleString()} rows`;
+
+  document.getElementById('raw-head').innerHTML =
+    '<tr>' + RAW_COLS.map(c => `<th>${c.label}</th>`).join('') + '</tr>';
+  document.getElementById('raw-body').innerHTML =
+    slice.map(r => '<tr>' + RAW_COLS.map(c => `<td>${r[c.key]||''}</td>`).join('') + '</tr>').join('');
+
+  // Pagination
+  let pgHTML = '';
+  const show = p => rawPage === p;
+  if (pages <= 10) {
+    for (let p = 1; p <= pages; p++)
+      pgHTML += `<button class="${show(p)?'active':''}" onclick="rawPage=${p};renderRaw()">${p}</button>`;
+  } else {
+    [1,2,'…',rawPage-1,rawPage,rawPage+1,'…',pages-1,pages]
+      .filter((p,i,a) => a.indexOf(p)===i && (typeof p==='string'||p>=1&&p<=pages))
+      .forEach(p => {
+        if (typeof p === 'string') pgHTML += `<button disabled>…</button>`;
+        else pgHTML += `<button class="${show(p)?'active':''}" onclick="rawPage=${p};renderRaw()">${p}</button>`;
+      });
+  }
+  document.getElementById('pgn-btns').innerHTML = pgHTML;
+  document.getElementById('pgn-info').textContent =
+    `Page ${rawPage} of ${pages}`;
+}
+
+function resetRaw() {
+  document.getElementById('rf-seller').value = '';
+  document.getElementById('rf-from').value = '';
+  document.getElementById('rf-to').value = '';
+  document.getElementById('rf-units').value = '';
+  msResetAll();
+  applyRaw();
+}
+
+// ══════════════════════════════════════════════════════════
+// CSV DOWNLOAD
+// ══════════════════════════════════════════════════════════
+function downloadCSV() {
+  const data = document.getElementById('pane-raw').classList.contains('active') ? rawFiltered : rawAll;
+  if (!data.length) { alert('No data to download.'); return; }
+  const hdr = RAW_COLS.map(c => c.label).join(',');
+  const rows = data.map(r => RAW_COLS.map(c => `"${String(r[c.key]||'').replace(/"/g,'""')}"`).join(','));
+  const blob = new Blob([hdr+'\n'+rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pickup_scorecard_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+// DATA LOAD & UPLOAD
+// ══════════════════════════════════════════════════════════
+function onDataLoaded(newRows, isAppend, label) {
+  if (!newRows.length) return;
+  const existingDates = new Set(rawAll.map(r => r.date));
+  const toAdd = isAppend ? newRows.filter(r => !existingDates.has(r.date)) : newRows;
+  const skipped = newRows.length - toAdd.length;
+
+  const newDates = [...new Set(toAdd.map(r=>r.date).filter(Boolean))].filter(d => !DATES.includes(d));
+  if (newDates.length) extendDates(newDates);
+
+  rawAll = isAppend ? [...rawAll, ...toAdd] : toAdd;
+  rawFiltered = [...rawAll];
+  hubData = computeHub(rawAll);
+
+  refreshAllDropdowns();
+  refreshDateDropdowns();
+  applyRaw();
+  renderMetrics();
+
+  const warn = document.getElementById('sample-warn');
+  if (warn) warn.style.display = 'none';
+
+  const msg = !isAppend || rawAll.length === toAdd.length
+    ? `✓ Loaded ${toAdd.length.toLocaleString()} rows from ${label}`
+    : `✓ Appended ${toAdd.length.toLocaleString()} new rows${skipped?` (${skipped.toLocaleString()} skipped)`:''} · Total: ${rawAll.length.toLocaleString()}`;
+  document.getElementById('upstat').textContent = msg;
+}
+
+// Upload handler
+document.getElementById('csv-file').addEventListener('change', function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const rows = parseCSV(ev.target.result);
+      if (!rows.length) { alert('No data found in file.'); return; }
+      dbAppend(rows.filter(r => !new Set(rawAll.map(x=>x.date)).has(r.date)));
+      onDataLoaded(rows, rawAll.length > 0, file.name);
+    } catch(err) { alert('Parse error: ' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// Auto-fetch from Google Sheets (if published to web)
+// Published-to-web CSV URL (File → Share → Publish to web → RD-Pickup Scorecard → CSV)
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/12pFk15rAKV5wx2_E64MGnGVEgq2KWd460vDgrXg8HU0/pub?gid=2121009471&single=true&output=csv';
+
+async function autoFetch() {
+  const stat = document.getElementById('upstat');
+  stat.textContent = '⟳ Fetching from Google Sheet…';
+  try {
+    // Use no-credentials fetch for publicly published sheets
+    const resp = await fetch(SHEET_URL, {mode:'cors', credentials:'omit',
+      headers:{'Cache-Control':'no-cache'}});
+    if (!resp.ok) throw new Error('HTTP ' + resp.status +
+      ' — make sure sheet is published: File → Share → Publish to web → RD-Pickup Scorecard → CSV');
+    const csv = await resp.text();
+    if (!csv || csv.length < 50) throw new Error('Sheet returned empty data');
+    const rows = parseCSV(csv);
+    if (!rows.length) throw new Error('No rows could be parsed from sheet');
+    const existingDates = new Set(rawAll.map(r => r.date));
+    const isAppend = rawAll.length > 0;
+    const toAdd = isAppend ? rows.filter(r => r.date && !existingDates.has(r.date)) : rows;
+    if (toAdd.length) {
+      dbAppend(toAdd);
+      onDataLoaded(rows, isAppend, 'Google Sheet');
+    } else {
+      stat.textContent = '✓ Already up to date — no new dates found.';
+    }
+  } catch(e) {
+    stat.style.color = '#c0392b';
+    stat.textContent = '⚠ Fetch failed: ' + e.message;
+    console.error('autoFetch error:', e);
+  }
+}
+
+function clearAllData() {
+  if (!confirm('Clear all data?')) return;
+  dbClear(() => {
+    rawAll = []; rawFiltered = []; hubData = null;
+    applyRaw(); renderMetrics();
+    document.getElementById('upstat').textContent = 'Data cleared.';
+    const warn = document.getElementById('sample-warn');
+    if (warn) warn.style.display = '';
+  });
+}
+
+function loadSaved() {
+  dbLoad(saved => {
+    if (!saved || !saved.length) return;
+    const newDates = [...new Set(saved.map(r=>r.date).filter(Boolean))].filter(d=>!DATES.includes(d));
+    if (newDates.length) extendDates(newDates);
+    rawAll = saved; rawFiltered = [...rawAll];
+    hubData = computeHub(rawAll);
+    refreshAllDropdowns();
+    applyRaw(); renderMetrics();
+    const warn = document.getElementById('sample-warn');
+    if (warn) warn.style.display = 'none';
+    document.getElementById('upstat').textContent =
+      `✓ ${rawAll.length.toLocaleString()} rows restored from last session`;
+  });
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tpane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pane-' + name).classList.add('active');
+}
+
+(function init() {
+  refreshDateDropdowns();
+  const fromI = Math.max(0, DATES.length - 30);
+  document.getElementById('mf-from').value = fromI;
+  applyRaw();
+  renderMetrics();
+  loadSaved();
+  setTimeout(autoFetch, 2000);
+})();
+</script>
+</body>
+</html>
