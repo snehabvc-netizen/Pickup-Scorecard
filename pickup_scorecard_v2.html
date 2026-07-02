@@ -1035,22 +1035,38 @@ document.getElementById('csv-file').addEventListener('change', function(e) {
 });
 
 // Auto-fetch from Google Sheets (if published to web)
-// Published-to-web CSV URL (File → Share → Publish to web → RD-Pickup Scorecard → CSV)
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/12pFk15rAKV5wx2_E64MGnGVEgq2KWd460vDgrXg8HU0/pub?gid=2121009471&single=true&output=csv';
+// CORS proxies — tried in order until one works
+const PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://cors-anywhere.herokuapp.com/${u}`,
+];
+
+async function tryFetch(url) {
+  // Try direct first
+  try {
+    const r = await fetch(url, {credentials:'omit', redirect:'follow'});
+    if (r.ok) { const t = await r.text(); if (t && t.length > 50) return t; }
+  } catch(e) {}
+  // Try each proxy
+  for (const proxy of PROXIES) {
+    try {
+      const r = await fetch(proxy(url), {credentials:'omit', redirect:'follow'});
+      if (r.ok) { const t = await r.text(); if (t && t.length > 50) return t; }
+    } catch(e) {}
+  }
+  throw new Error('All fetch attempts failed. Please upload CSV manually.');
+}
 
 async function autoFetch() {
   const stat = document.getElementById('upstat');
+  stat.style.color = '';
   stat.textContent = '⟳ Fetching from Google Sheet…';
   try {
-    // Use no-credentials fetch for publicly published sheets
-    const resp = await fetch(SHEET_URL, {mode:'cors', credentials:'omit',
-      headers:{'Cache-Control':'no-cache'}});
-    if (!resp.ok) throw new Error('HTTP ' + resp.status +
-      ' — make sure sheet is published: File → Share → Publish to web → RD-Pickup Scorecard → CSV');
-    const csv = await resp.text();
-    if (!csv || csv.length < 50) throw new Error('Sheet returned empty data');
+    const csv = await tryFetch(SHEET_URL);
     const rows = parseCSV(csv);
-    if (!rows.length) throw new Error('No rows could be parsed from sheet');
+    if (!rows.length) throw new Error('No rows parsed — check sheet is published correctly');
     const existingDates = new Set(rawAll.map(r => r.date));
     const isAppend = rawAll.length > 0;
     const toAdd = isAppend ? rows.filter(r => r.date && !existingDates.has(r.date)) : rows;
@@ -1062,7 +1078,7 @@ async function autoFetch() {
     }
   } catch(e) {
     stat.style.color = '#c0392b';
-    stat.textContent = '⚠ Fetch failed: ' + e.message;
+    stat.textContent = '⚠ ' + e.message;
     console.error('autoFetch error:', e);
   }
 }
