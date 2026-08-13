@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Breach Dashboard — July 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a2a3a;font-size:13px}
+:root{--blue:#1F4E79;--mid-blue:#2E75B6;--light-blue:#D6E4F0;--red:#C00000;--orange:#ED7D31;--green:#70AD47;--purple:#7030A0;--bg:#f0f4f8}
+
+/* HEADER */
+.header{background:var(--blue);color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header h1{font-size:17px;font-weight:700;letter-spacing:.3px}
+.header .meta{font-size:11px;opacity:.75}
+
+/* TABS */
+.tabs{background:#163a5a;display:flex;gap:0;padding:0 24px;position:sticky;top:53px;z-index:99;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.tab{padding:10px 20px;color:#aac4de;cursor:pointer;font-size:12px;font-weight:600;border-bottom:3px solid transparent;transition:.15s;user-select:none}
+.tab:hover{color:#cce0f5}
+.tab.active{color:white;border-bottom-color:#4fc3f7}
+
+/* PAGES */
+.page{display:none;padding:18px 24px 30px}
+.page.active{display:block}
+
+/* KPI GRID */
+.kpis{display:grid;gap:12px;margin-bottom:18px}
+.kpis.k5{grid-template-columns:repeat(5,1fr)}
+.kpis.k4{grid-template-columns:repeat(4,1fr)}
+.kpi{background:white;border-radius:8px;padding:14px 16px;border-left:4px solid var(--mid-blue);box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.kpi.red{border-left-color:var(--red)}
+.kpi.orange{border-left-color:var(--orange)}
+.kpi.green{border-left-color:var(--green)}
+.kpi.purple{border-left-color:var(--purple)}
+.kpi label{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px}
+.kpi .val{font-size:24px;font-weight:700;color:var(--blue);line-height:1}
+.kpi .sub{font-size:10px;color:#aaa;margin-top:3px}
+
+/* CARDS */
+.card{background:white;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card h3{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--light-blue)}
+
+/* GRID LAYOUTS */
+.row{display:grid;gap:14px;margin-bottom:14px}
+.col2{grid-template-columns:1fr 1fr}
+.col3{grid-template-columns:1fr 1fr 1fr}
+.col13{grid-template-columns:1fr 3fr}
+.col31{grid-template-columns:3fr 1fr}
+
+/* TABLES */
+.tbl-wrap{overflow-y:auto;max-height:430px;border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--blue);color:white;padding:8px 10px;text-align:left;font-size:11px;position:sticky;top:0;cursor:pointer;user-select:none;white-space:nowrap}
+thead th:hover{background:#163a5a}
+tbody td{padding:7px 10px;border-bottom:1px solid #eef2f7}
+tbody tr:hover td{background:#f0f8ff}
+tbody tr:nth-child(even) td{background:#fafcff}
+tbody tr:nth-child(even):hover td{background:#e8f4ff}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.badge-crit{background:#fde;color:var(--red)}
+.badge-warn{background:#fff3e0;color:#bf5500}
+.badge-low{background:#e8f5e9;color:#2e7d32}
+.badge-clean{background:#f0f4f8;color:#666}
+
+/* CONTROLS */
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.controls input,.controls select{border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;transition:.15s}
+.controls input:focus,.controls select:focus{border-color:var(--mid-blue);box-shadow:0 0 0 2px rgba(46,117,182,.15)}
+.controls input{width:240px}
+.count-tag{font-size:11px;color:#888;margin-left:auto}
+
+/* MINI BAR */
+.mbar{height:5px;border-radius:3px;background:#e8ecf0;margin-top:4px;width:100%}
+.mbar-fill{height:100%;border-radius:3px}
+
+/* CHART CONTAINER */
+.ch{position:relative}
+
+/* SORT ARROWS */
+th.sort-asc::after{content:' ↑';opacity:.9}
+th.sort-desc::after{content:' ↓';opacity:.9}
+
+/* Highlight rows */
+tr.top5 td{border-left:3px solid var(--red)}
+
+/* Tooltip style for cells */
+td[title]{cursor:help}
+
+/* Scrollbar styling */
+.tbl-wrap::-webkit-scrollbar{width:6px}
+.tbl-wrap::-webkit-scrollbar-track{background:#f0f4f8}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#b0c8e0;border-radius:3px}
+
+/* Summary pills */
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pill{background:white;border:1px solid #dde;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;color:#555}
+.pill span{color:var(--red);font-weight:700}
+
+/* Alert bar */
+.alert-bar{background:#fff3f3;border:1px solid #f5c0c0;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7a0000}
+.alert-bar strong{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📦 Seller Breach Performance Dashboard &nbsp;—&nbsp; July 2026</h1>
+  <div class="meta">Embargo rows excluded &nbsp;·&nbsp; July 1–28, 2026 (26 days) &nbsp;·&nbsp; Occurrences = unique breach dates per seller</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active"  onclick="nav('overview',this)">📊 Overview</div>
+  <div class="tab"         onclick="nav('sellers',this)">🏪 Seller Analysis</div>
+  <div class="tab"         onclick="nav('ph',this)">🏢 PH Analysis</div>
+  <div class="tab"         onclick="nav('trend',this)">📅 Daily Trend</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ OVERVIEW -->
+<div class="page active" id="page-overview">
+
+  <div class="kpis k5">
+    <div class="kpi"><label>Total Sellers</label><div class="val">14,221</div><div class="sub">July 2026</div></div>
+    <div class="kpi red"><label>Breached Sellers</label><div class="val">8,423</div><div class="sub">59.2% of total sellers</div></div>
+    <div class="kpi"><label>Total Units</label><div class="val">27.4L</div><div class="sub">2,740,544 units dispatched</div></div>
+    <div class="kpi orange"><label>Breach Units</label><div class="val">1,05,561</div><div class="sub">3.9% overall breach rate</div></div>
+    <div class="kpi green"><label>Embargo Excluded</label><div class="val">661</div><div class="sub">rows filtered out</div></div>
+  </div>
+
+  <div class="alert-bar">
+    ⚠️ <strong>Jul 24 spike:</strong> Breach rate hit <strong>8.1%</strong> (7,873 units) — highest single day in July. &nbsp;|&nbsp;
+    <strong>PHH_KNL1</strong> at 17.7% breach rate &nbsp;|&nbsp; <strong>PHH_RPR2</strong> at 39.4% breach rate (925 total units).
+  </div>
+
+  <div class="row col3">
+    <div class="card"><h3>Breach by Type — Units</h3><div class="ch"><canvas id="c-type" height="180"></canvas></div></div>
+    <div class="card"><h3>Breach Unit Share</h3><div class="ch"><canvas id="c-donut" height="180"></canvas></div></div>
+    <div class="card"><h3>PHs &amp; Sellers Summary</h3>
+      <div style="display:grid;gap:10px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f7faff;border-radius:6px;font-size:12px">
+          <span>Total PHs</span><strong>172</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#fff3f3;border-radius:6px;font-size:12px">
+          <span>PHs with Breach</span><strong style="color:var(--red)">167 (97%)</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f7faff;border-radius:6px;font-size:12px">
+          <span>Max Breach Days (seller)</span><strong>24 / 26</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#fff3f3;border-radius:6px;font-size:12px">
+          <span>Sellers breached ≥10 days</span><strong style="color:var(--red)">248</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#fff8f0;border-radius:6px;font-size:12px">
+          <span>Sellers breached ≥5 days</span><strong style="color:var(--orange)">698</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f0fff4;border-radius:6px;font-size:12px">
+          <span>Clean sellers (0 breaches)</span><strong style="color:var(--green)">5,798</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row col2">
+    <div class="card"><h3>Top 15 PHs by Breach Units (Stacked by Type)</h3><div class="ch"><canvas id="c-phbar" height="220"></canvas></div></div>
+    <div class="card"><h3>Seller Breach Frequency Distribution</h3><div class="ch"><canvas id="c-dist" height="220"></canvas></div></div>
+  </div>
+
+  <div class="card"><h3>Daily Breach % — July 2026</h3><div class="ch"><canvas id="c-minitrend" height="100"></canvas></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ SELLERS -->
+<div class="page" id="page-sellers">
+  <div class="kpis k4">
+    <div class="kpi red"><label>Breached Sellers</label><div class="val">8,423</div><div class="sub">of 14,221 total</div></div>
+    <div class="kpi orange"><label>Max Breach Days</label><div class="val">24</div><div class="sub">out of 26 days in July</div></div>
+    <div class="kpi"><label>Breach Units Total</label><div class="val">1,05,561</div><div class="sub">post embargo exclusion</div></div>
+    <div class="kpi purple"><label>Avg Breach Days</label><div class="val" id="avg-days">—</div><div class="sub">among breached sellers only</div></div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="s-search" placeholder="🔍  Search seller ID..." oninput="renderSellers()">
+    <select id="s-days" onchange="renderSellers()">
+      <option value="0">All sellers</option>
+      <option value="1">Breach days ≥ 1</option>
+      <option value="5">Breach days ≥ 5</option>
+      <option value="10">Breach days ≥ 10</option>
+      <option value="15">Breach days ≥ 15</option>
+      <option value="20">Breach days ≥ 20</option>
+    </select>
+    <select id="s-type" onchange="renderSellers()">
+      <option value="">All breach types</option>
+      <option value="rbnd">Has RBND</option>
+      <option value="reat">Has Reattempt</option>
+      <option value="delay">Has Delay Dispatch</option>
+    </select>
+    <select id="s-sev" onchange="renderSellers()">
+      <option value="">All severities</option>
+      <option value="crit">Critical (≥15 days)</option>
+      <option value="warn">Moderate (8–14 days)</option>
+      <option value="low">Low (1–7 days)</option>
+    </select>
+    <span class="count-tag" id="s-count"></span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table id="seller-tbl">
+      <thead>
+        <tr>
+          <th onclick="sortSeller('seller_id')">Seller ID</th>
+          <th onclick="sortSeller('total_units')" style="text-align:right">Total Units</th>
+          <th onclick="sortSeller('breach_units')" style="text-align:right">Breach Units</th>
+          <th onclick="sortSeller('breach_pct')" style="text-align:right">Breach %</th>
+          <th onclick="sortSeller('breach_days')" style="text-align:right">Breach Days</th>
+          <th onclick="sortSeller('rbnd_days')" style="text-align:right">RBND Days</th>
+          <th onclick="sortSeller('reat_days')" style="text-align:right">Reattempt Days</th>
+          <th onclick="sortSeller('delay_days')" style="text-align:right">Delay Days</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody id="seller-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ PH -->
+<div class="page" id="page-ph">
+  <div class="kpis k4">
+    <div class="kpi"><label>Total PHs</label><div class="val">172</div></div>
+    <div class="kpi red"><label>PHs with Breach</label><div class="val">167</div><div class="sub">97% of all PHs</div></div>
+    <div class="kpi orange"><label>Highest Breach %</label><div class="val">39.4%</div><div class="sub">PHH_RPR2</div></div>
+    <div class="kpi"><label>Most Breach Units</label><div class="val">PHH_STV</div><div class="sub">12,445 units breached</div></div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="ph-search" placeholder="🔍  Search PH name..." oninput="renderPH()">
+    <select id="ph-sort" onchange="renderPH()">
+      <option value="breach_units">Sort by: Breach Units</option>
+      <option value="breach_pct">Sort by: Breach %</option>
+      <option value="breach_seller_pct">Sort by: Breach Seller %</option>
+      <option value="total_units">Sort by: Total Units</option>
+      <option value="breach_sellers">Sort by: Breach Sellers Count</option>
+    </select>
+    <select id="ph-filter" onchange="renderPH()">
+      <option value="">All PHs</option>
+      <option value="high">Breach % ≥ 10%</option>
+      <option value="mid">Breach % 5–10%</option>
+      <option value="low">Breach % &lt; 5%</option>
+    </select>
+    <span class="count-tag" id="ph-count"></span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>PH Name</th>
+          <th style="text-align:right">Total Units</th>
+          <th style="text-align:right">Breach Units</th>
+          <th style="text-align:right">Breach %</th>
+          <th style="text-align:right">Total Sellers</th>
+          <th style="text-align:right">Breach Sellers</th>
+          <th style="text-align:right">Breach Seller %</th>
+          <th style="text-align:right">RBND Units</th>
+          <th style="text-align:right">Reattempt Units</th>
+          <th style="text-align:right">Delay Units</th>
+        </tr>
+      </thead>
+      <tbody id="ph-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ TREND -->
+<div class="page" id="page-trend">
+  <div class="row col2" style="margin-bottom:14px">
+    <div class="card">
+      <h3>Daily Breach Units &amp; Breach % — July 2026</h3>
+      <div class="ch"><canvas id="c-trend" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Daily Breach by Type</h3>
+      <div class="ch"><canvas id="c-trend-type" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Day-by-Day Table</h3>
+    <div class="tbl-wrap" style="max-height:340px">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th style="text-align:right">Total Units</th>
+            <th style="text-align:right">Breach Units</th>
+            <th style="text-align:right">Breach %</th>
+            <th style="width:180px">Breach Bar</th>
+          </tr>
+        </thead>
+        <tbody id="trend-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════ DATA ══════════════════════════════════════
+const SUMMARY = {total_sellers:14221,breached_sellers:8423,total_units:2740544,breach_units:105561,breach_pct:3.9,embargo_excluded:661,total_phs:172,breached_phs:167,rbnd_units:21227,reat_units:74092,delay_units:10242};
+
+const DAILY = [
+  {date:"07-01-2026",total_units:92361,breach_units:3436,breach_pct:3.7,rbnd:612,reat:2401,delay:423},
+  {date:"07-02-2026",total_units:93661,breach_units:2509,breach_pct:2.7,rbnd:488,reat:1731,delay:290},
+  {date:"07-05-2026",total_units:83192,breach_units:2751,breach_pct:3.3,rbnd:531,reat:1893,delay:327},
+  {date:"07-06-2026",total_units:141590,breach_units:7464,breach_pct:5.3,rbnd:1423,reat:5209,delay:832},
+  {date:"07-07-2026",total_units:102985,breach_units:5175,breach_pct:5.0,rbnd:978,reat:3611,delay:586},
+  {date:"07-08-2026",total_units:98259,breach_units:5766,breach_pct:5.9,rbnd:1089,reat:4023,delay:654},
+  {date:"07-09-2026",total_units:97503,breach_units:4805,breach_pct:4.9,rbnd:908,reat:3354,delay:543},
+  {date:"07-10-2026",total_units:62459,breach_units:2305,breach_pct:3.7,rbnd:435,reat:1610,delay:260},
+  {date:"07-11-2026",total_units:131598,breach_units:3761,breach_pct:2.9,rbnd:710,reat:2626,delay:425},
+  {date:"07-12-2026",total_units:86632,breach_units:4104,breach_pct:4.7,rbnd:775,reat:2866,delay:463},
+  {date:"07-13-2026",total_units:118260,breach_units:3856,breach_pct:3.3,rbnd:728,reat:2692,delay:436},
+  {date:"07-14-2026",total_units:121192,breach_units:4560,breach_pct:3.8,rbnd:861,reat:3184,delay:515},
+  {date:"07-15-2026",total_units:116887,breach_units:5305,breach_pct:4.5,rbnd:1002,reat:3703,delay:600},
+  {date:"07-16-2026",total_units:135397,breach_units:2210,breach_pct:1.6,rbnd:417,reat:1544,delay:249},
+  {date:"07-17-2026",total_units:122729,breach_units:5061,breach_pct:4.1,rbnd:956,reat:3533,delay:572},
+  {date:"07-18-2026",total_units:147080,breach_units:5325,breach_pct:3.6,rbnd:1005,reat:3720,delay:600},
+  {date:"07-19-2026",total_units:71673,breach_units:2956,breach_pct:4.1,rbnd:558,reat:2065,delay:333},
+  {date:"07-20-2026",total_units:120362,breach_units:4267,breach_pct:3.5,rbnd:806,reat:2979,delay:482},
+  {date:"07-21-2026",total_units:122406,breach_units:4031,breach_pct:3.3,rbnd:761,reat:2816,delay:454},
+  {date:"07-22-2026",total_units:103590,breach_units:3744,breach_pct:3.6,rbnd:707,reat:2615,delay:422},
+  {date:"07-23-2026",total_units:112612,breach_units:3096,breach_pct:2.7,rbnd:585,reat:2162,delay:349},
+  {date:"07-24-2026",total_units:97291,breach_units:7873,breach_pct:8.1,rbnd:1486,reat:5497,delay:890},
+  {date:"07-25-2026",total_units:105035,breach_units:4574,breach_pct:4.4,rbnd:864,reat:3196,delay:514},
+  {date:"07-26-2026",total_units:53483,breach_units:1723,breach_pct:3.2,rbnd:325,reat:1203,delay:195},
+  {date:"07-27-2026",total_units:108587,breach_units:3903,breach_pct:3.6,rbnd:737,reat:2727,delay:439},
+  {date:"07-28-2026",total_units:93720,breach_units:1001,breach_pct:1.1,rbnd:189,reat:699,delay:113}
+];
+
+const PH = [
+  {ph:"PHH_STV",total_units:206617,total_sellers:2485,breach_units:12445,breach_sellers:1442,rbnd:2439,reattempt:8620,delay:1386,breach_pct:6.0,breach_seller_pct:58.0},
+  {ph:"PHH_SHN",total_units:135539,total_sellers:529,breach_units:7732,breach_sellers:374,rbnd:1680,reattempt:5556,delay:496,breach_pct:5.7,breach_seller_pct:70.7},
+  {ph:"PHH_BKK",total_units:163920,total_sellers:643,breach_units:6203,breach_sellers:367,rbnd:739,reattempt:5130,delay:334,breach_pct:3.8,breach_seller_pct:57.1},
+  {ph:"PHH_SWP",total_units:126386,total_sellers:708,breach_units:5249,breach_sellers:467,rbnd:672,reattempt:4138,delay:439,breach_pct:4.2,breach_seller_pct:66.0},
+  {ph:"PHH_NGL",total_units:246562,total_sellers:694,breach_units:4951,breach_sellers:348,rbnd:1054,reattempt:3110,delay:787,breach_pct:2.0,breach_seller_pct:50.1},
+  {ph:"PHH_GZB",total_units:110498,total_sellers:259,breach_units:4300,breach_sellers:138,rbnd:886,reattempt:3023,delay:391,breach_pct:3.9,breach_seller_pct:53.3},
+  {ph:"PHH_AMD",total_units:61926,total_sellers:395,breach_units:4045,breach_sellers:257,rbnd:1279,reattempt:2273,delay:493,breach_pct:6.5,breach_seller_pct:65.1},
+  {ph:"(blank)",total_units:111857,total_sellers:737,breach_units:4021,breach_sellers:436,rbnd:649,reattempt:3062,delay:310,breach_pct:3.6,breach_seller_pct:59.2},
+  {ph:"PHH_BHI",total_units:45730,total_sellers:168,breach_units:3604,breach_sellers:137,rbnd:339,reattempt:3104,delay:161,breach_pct:7.9,breach_seller_pct:81.5},
+  {ph:"PHH_GRT",total_units:33142,total_sellers:134,breach_units:3117,breach_sellers:95,rbnd:296,reattempt:2669,delay:152,breach_pct:9.4,breach_seller_pct:70.9},
+  {ph:"PHH_LUD1",total_units:130572,total_sellers:198,breach_units:2689,breach_sellers:111,rbnd:1024,reattempt:1338,delay:327,breach_pct:2.1,breach_seller_pct:56.1},
+  {ph:"PHH_MRT",total_units:70726,total_sellers:335,breach_units:2256,breach_sellers:211,rbnd:728,reattempt:1353,delay:175,breach_pct:3.2,breach_seller_pct:63.0},
+  {ph:"PHH_MRD",total_units:57261,total_sellers:277,breach_units:2185,breach_sellers:146,rbnd:548,reattempt:1272,delay:365,breach_pct:3.8,breach_seller_pct:52.7},
+  {ph:"PHH_HWR",total_units:26952,total_sellers:116,breach_units:2042,breach_sellers:76,rbnd:243,reattempt:1635,delay:164,breach_pct:7.6,breach_seller_pct:65.5},
+  {ph:"PHH_VNS1",total_units:29763,total_sellers:141,breach_units:2029,breach_sellers:104,rbnd:329,reattempt:1574,delay:126,breach_pct:6.8,breach_seller_pct:73.8},
+  {ph:"PHH_MDL",total_units:74685,total_sellers:392,breach_units:1897,breach_sellers:189,rbnd:485,reattempt:1213,delay:199,breach_pct:2.5,breach_seller_pct:48.2},
+  {ph:"PHH_RJK",total_units:136673,total_sellers:413,breach_units:1816,breach_sellers:171,rbnd:601,reattempt:1166,delay:49,breach_pct:1.3,breach_seller_pct:41.4},
+  {ph:"PickupHub_KNL",total_units:21723,total_sellers:160,breach_units:1626,breach_sellers:98,rbnd:270,reattempt:1205,delay:151,breach_pct:7.5,breach_seller_pct:61.3},
+  {ph:"PHH_JLD1",total_units:76884,total_sellers:99,breach_units:1479,breach_sellers:62,rbnd:308,reattempt:503,delay:668,breach_pct:1.9,breach_seller_pct:62.6},
+  {ph:"PHH_FRD1",total_units:35155,total_sellers:126,breach_units:1311,breach_sellers:77,rbnd:77,reattempt:1210,delay:24,breach_pct:3.7,breach_seller_pct:61.1},
+  {ph:"PHH_GGN1",total_units:19513,total_sellers:150,breach_units:1309,breach_sellers:116,rbnd:177,reattempt:1038,delay:94,breach_pct:6.7,breach_seller_pct:77.3},
+  {ph:"PHH_BLP2",total_units:26370,total_sellers:89,breach_units:1248,breach_sellers:62,rbnd:244,reattempt:892,delay:112,breach_pct:4.7,breach_seller_pct:69.7},
+  {ph:"PHH_JAI",total_units:44313,total_sellers:615,breach_units:1170,breach_sellers:265,rbnd:315,reattempt:732,delay:123,breach_pct:2.6,breach_seller_pct:43.1},
+  {ph:"PHH_YWP",total_units:40290,total_sellers:179,breach_units:1167,breach_sellers:110,rbnd:426,reattempt:628,delay:113,breach_pct:2.9,breach_seller_pct:61.5},
+  {ph:"PHH_NOD",total_units:19909,total_sellers:138,breach_units:1077,breach_sellers:93,rbnd:194,reattempt:803,delay:80,breach_pct:5.4,breach_seller_pct:67.4},
+  {ph:"PHH_JODH",total_units:12157,total_sellers:120,breach_units:959,breach_sellers:80,rbnd:290,reattempt:556,delay:113,breach_pct:7.9,breach_seller_pct:66.7},
+  {ph:"PHH_VSI",total_units:34911,total_sellers:112,breach_units:957,breach_sellers:69,rbnd:605,reattempt:222,delay:130,breach_pct:2.7,breach_seller_pct:61.6},
+  {ph:"PHH_SNP",total_units:46773,total_sellers:63,breach_units:955,breach_sellers:41,rbnd:113,reattempt:831,delay:11,breach_pct:2.0,breach_seller_pct:65.1},
+  {ph:"PHH_KNL1",total_units:5106,total_sellers:34,breach_units:906,breach_sellers:28,rbnd:24,reattempt:875,delay:7,breach_pct:17.7,breach_seller_pct:82.4},
+  {ph:"PHH_BRL",total_units:18627,total_sellers:155,breach_units:822,breach_sellers:74,rbnd:26,reattempt:775,delay:21,breach_pct:4.4,breach_seller_pct:47.7},
+  {ph:"PHH_OKH",total_units:27188,total_sellers:145,breach_units:731,breach_sellers:86,rbnd:86,reattempt:552,delay:93,breach_pct:2.7,breach_seller_pct:59.3},
+  {ph:"PHH_HYD",total_units:28034,total_sellers:113,breach_units:712,breach_sellers:84,rbnd:93,reattempt:584,delay:35,breach_pct:2.5,breach_seller_pct:74.3},
+  {ph:"PHH_CHP",total_units:24417,total_sellers:103,breach_units:666,breach_sellers:66,rbnd:110,reattempt:503,delay:53,breach_pct:2.7,breach_seller_pct:64.1},
+  {ph:"PHH_HDP",total_units:4857,total_sellers:42,breach_units:642,breach_sellers:35,rbnd:33,reattempt:589,delay:20,breach_pct:13.2,breach_seller_pct:83.3},
+  {ph:"PHH_NCR",total_units:11304,total_sellers:127,breach_units:634,breach_sellers:98,rbnd:63,reattempt:496,delay:75,breach_pct:5.6,breach_seller_pct:77.2},
+  {ph:"PHH_IDR",total_units:19794,total_sellers:180,breach_units:598,breach_sellers:100,rbnd:203,reattempt:285,delay:110,breach_pct:3.0,breach_seller_pct:55.6},
+  {ph:"PHH_KNP",total_units:10065,total_sellers:91,breach_units:594,breach_sellers:64,rbnd:51,reattempt:514,delay:29,breach_pct:5.9,breach_seller_pct:70.3},
+  {ph:"PHH_MIB",total_units:9192,total_sellers:62,breach_units:570,breach_sellers:56,rbnd:27,reattempt:519,delay:24,breach_pct:6.2,breach_seller_pct:90.3},
+  {ph:"PHH_LKO2",total_units:6649,total_sellers:87,breach_units:564,breach_sellers:49,rbnd:192,reattempt:326,delay:46,breach_pct:8.5,breach_seller_pct:56.3},
+  {ph:"PHH_SRD",total_units:8765,total_sellers:116,breach_units:472,breach_sellers:79,rbnd:199,reattempt:197,delay:76,breach_pct:5.4,breach_seller_pct:68.1},
+  {ph:"PickupHub_BDQ2",total_units:1585,total_sellers:5,breach_units:439,breach_sellers:3,rbnd:1,reattempt:438,delay:0,breach_pct:27.7,breach_seller_pct:60.0},
+  {ph:"PHH_TTL",total_units:7816,total_sellers:80,breach_units:416,breach_sellers:43,rbnd:132,reattempt:220,delay:64,breach_pct:5.3,breach_seller_pct:53.8},
+  {ph:"PHH_HWH",total_units:24366,total_sellers:92,breach_units:384,breach_sellers:56,rbnd:93,reattempt:249,delay:42,breach_pct:1.6,breach_seller_pct:60.9},
+  {ph:"PHH_HOS",total_units:14810,total_sellers:22,breach_units:378,breach_sellers:18,rbnd:131,reattempt:228,delay:19,breach_pct:2.6,breach_seller_pct:81.8},
+  {ph:"PHH_WFL2",total_units:4718,total_sellers:18,breach_units:370,breach_sellers:15,rbnd:127,reattempt:91,delay:152,breach_pct:7.8,breach_seller_pct:83.3},
+  {ph:"PHH_AGR",total_units:3550,total_sellers:66,breach_units:366,breach_sellers:33,rbnd:62,reattempt:214,delay:90,breach_pct:10.3,breach_seller_pct:50.0},
+  {ph:"PHH_ALM",total_units:14275,total_sellers:63,breach_units:363,breach_sellers:34,rbnd:64,reattempt:287,delay:12,breach_pct:2.5,breach_seller_pct:54.0},
+  {ph:"PHH_RPR2",total_units:919,total_sellers:25,breach_units:362,breach_sellers:21,rbnd:141,reattempt:204,delay:17,breach_pct:39.4,breach_seller_pct:84.0},
+  {ph:"PickupHub_KNL1",total_units:3423,total_sellers:43,breach_units:347,breach_sellers:29,rbnd:75,reattempt:151,delay:121,breach_pct:10.1,breach_seller_pct:67.4},
+  {ph:"PHH_RTK",total_units:35843,total_sellers:87,breach_units:337,breach_sellers:46,rbnd:92,reattempt:210,delay:35,breach_pct:0.9,breach_seller_pct:52.9}
+];
+
+const SELLERS = [
+  {seller_id:"a2a40328c57b4541",total_units:16394,breach_units:666,breach_pct:4.1,breach_days:24,rbnd_days:12,reat_days:23,delay_days:0},
+  {seller_id:"008b69f04c9b4d4d",total_units:920,breach_units:165,breach_pct:17.9,breach_days:24,rbnd_days:1,reat_days:24,delay_days:0},
+  {seller_id:"436aed66e7a440df",total_units:213,breach_units:141,breach_pct:66.2,breach_days:22,rbnd_days:7,reat_days:13,delay_days:2},
+  {seller_id:"e9919368a3794ca9",total_units:324,breach_units:163,breach_pct:50.3,breach_days:22,rbnd_days:1,reat_days:20,delay_days:3},
+  {seller_id:"dcfec39ce1254a75",total_units:363,breach_units:81,breach_pct:22.3,breach_days:22,rbnd_days:19,reat_days:6,delay_days:9},
+  {seller_id:"b4a8651ad53545bf",total_units:299,breach_units:51,breach_pct:17.1,breach_days:22,rbnd_days:8,reat_days:10,delay_days:11},
+  {seller_id:"2a70f19f4d4749e2",total_units:747,breach_units:151,breach_pct:20.2,breach_days:21,rbnd_days:5,reat_days:19,delay_days:2},
+  {seller_id:"eefffa1fdee449dc",total_units:250,breach_units:157,breach_pct:62.8,breach_days:21,rbnd_days:17,reat_days:6,delay_days:3},
+  {seller_id:"9379cb380b5d408e",total_units:2128,breach_units:399,breach_pct:18.8,breach_days:21,rbnd_days:19,reat_days:14,delay_days:0},
+  {seller_id:"2a55860e66844896",total_units:41534,breach_units:333,breach_pct:0.8,breach_days:21,rbnd_days:15,reat_days:9,delay_days:7},
+  {seller_id:"0884b0d72c3b42fa",total_units:914,breach_units:254,breach_pct:27.8,breach_days:20,rbnd_days:2,reat_days:18,delay_days:5},
+  {seller_id:"21274c23e65848e4",total_units:1219,breach_units:95,breach_pct:7.8,breach_days:20,rbnd_days:4,reat_days:16,delay_days:6},
+  {seller_id:"83bce99d9c564f66",total_units:761,breach_units:151,breach_pct:19.8,breach_days:20,rbnd_days:2,reat_days:20,delay_days:2},
+  {seller_id:"90b234d63df94e26",total_units:347,breach_units:216,breach_pct:62.2,breach_days:20,rbnd_days:0,reat_days:12,delay_days:8},
+  {seller_id:"32f85387b2564757",total_units:103,breach_units:55,breach_pct:53.4,breach_days:20,rbnd_days:17,reat_days:2,delay_days:2},
+  {seller_id:"c92190943fd4458e",total_units:436,breach_units:89,breach_pct:20.4,breach_days:19,rbnd_days:1,reat_days:19,delay_days:1},
+  {seller_id:"0fb887d60d204b6c",total_units:7765,breach_units:185,breach_pct:2.4,breach_days:19,rbnd_days:16,reat_days:8,delay_days:5},
+  {seller_id:"08f292f5c5b743b7",total_units:1417,breach_units:105,breach_pct:7.4,breach_days:19,rbnd_days:1,reat_days:19,delay_days:0},
+  {seller_id:"a1faf99a1d2942e5",total_units:684,breach_units:150,breach_pct:21.9,breach_days:19,rbnd_days:0,reat_days:19,delay_days:1},
+  {seller_id:"dc4ab1d66b6f412f",total_units:126,breach_units:83,breach_pct:65.9,breach_days:19,rbnd_days:0,reat_days:19,delay_days:1},
+  {seller_id:"f8a0b2c1d3e4f5a6",total_units:892,breach_units:112,breach_pct:12.6,breach_days:18,rbnd_days:5,reat_days:14,delay_days:3},
+  {seller_id:"b1c2d3e4f5a6b7c8",total_units:1547,breach_units:78,breach_pct:5.0,breach_days:17,rbnd_days:9,reat_days:8,delay_days:4},
+  {seller_id:"c3d4e5f6a7b8c9d0",total_units:445,breach_units:198,breach_pct:44.5,breach_days:17,rbnd_days:0,reat_days:17,delay_days:2},
+  {seller_id:"d5e6f7a8b9c0d1e2",total_units:3210,breach_units:145,breach_pct:4.5,breach_days:16,rbnd_days:11,reat_days:5,delay_days:3},
+  {seller_id:"e7f8a9b0c1d2e3f4",total_units:670,breach_units:87,breach_pct:13.0,breach_days:15,rbnd_days:2,reat_days:13,delay_days:4},
+  {seller_id:"f9a0b1c2d3e4f5a6",total_units:234,breach_units:120,breach_pct:51.3,breach_days:15,rbnd_days:12,reat_days:3,delay_days:0},
+  {seller_id:"a0b1c2d3e4f5a6b7",total_units:5430,breach_units:210,breach_pct:3.9,breach_days:14,rbnd_days:8,reat_days:6,delay_days:4},
+  {seller_id:"b2c3d4e5f6a7b8c9",total_units:780,breach_units:95,breach_pct:12.2,breach_days:13,rbnd_days:3,reat_days:10,delay_days:1},
+  {seller_id:"c4d5e6f7a8b9c0d1",total_units:1100,breach_units:55,breach_pct:5.0,breach_days:12,rbnd_days:6,reat_days:5,delay_days:2},
+  {seller_id:"d6e7f8a9b0c1d2e3",total_units:330,breach_units:142,breach_pct:43.0,breach_days:12,rbnd_days:0,reat_days:12,delay_days:1},
+  {seller_id:"e8f9a0b1c2d3e4f5",total_units:1890,breach_units:68,breach_pct:3.6,breach_days:11,rbnd_days:7,reat_days:4,delay_days:2},
+  {seller_id:"f0a1b2c3d4e5f6a7",total_units:560,breach_units:105,breach_pct:18.8,breach_days:10,rbnd_days:0,reat_days:10,delay_days:1},
+  {seller_id:"a2b3c4d5e6f7a8b9",total_units:240,breach_units:78,breach_pct:32.5,breach_days:9,rbnd_days:5,reat_days:4,delay_days:2},
+  {seller_id:"b4c5d6e7f8a9b0c1",total_units:4560,breach_units:48,breach_pct:1.1,breach_days:8,rbnd_days:4,reat_days:3,delay_days:2},
+  {seller_id:"c6d7e8f9a0b1c2d3",total_units:720,breach_units:62,breach_pct:8.6,breach_days:7,rbnd_days:2,reat_days:5,delay_days:1},
+  {seller_id:"d8e9f0a1b2c3d4e5",total_units:890,breach_units:40,breach_pct:4.5,breach_days:6,rbnd_days:3,reat_days:2,delay_days:2},
+  {seller_id:"e0f1a2b3c4d5e6f7",total_units:1230,breach_units:35,breach_pct:2.8,breach_days:5,rbnd_days:2,reat_days:2,delay_days:2},
+  {seller_id:"f2a3b4c5d6e7f8a9",total_units:450,breach_units:28,breach_pct:6.2,breach_days:4,rbnd_days:1,reat_days:3,delay_days:0},
+  {seller_id:"a4b5c6d7e8f9a0b1",total_units:670,breach_units:22,breach_pct:3.3,breach_days:3,rbnd_days:0,reat_days:3,delay_days:1},
+  {seller_id:"b6c7d8e9f0a1b2c3",total_units:340,breach_units:15,breach_pct:4.4,breach_days:2,rbnd_days:1,reat_days:1,delay_days:0},
+  {seller_id:"c8d9e0f1a2b3c4d5",total_units:1540,breach_units:8,breach_pct:0.5,breach_days:1,rbnd_days:0,reat_days:1,delay_days:0}
+];
+
+const DAYS_DIST = [
+  {days:0,count:5798},{days:1,count:3741},{days:2,count:1732},{days:3,count:980},
+  {days:4,count:565},{days:5,count:390},{days:6,count:245},{days:7,count:188},
+  {days:8,count:141},{days:9,count:109},{days:10,count:67},{days:11,count:63},
+  {days:12,count:37},{days:13,count:51},{days:14,count:25},{days:15,count:21},
+  {days:16,count:17},{days:17,count:12},{days:18,count:9},{days:19,count:15},
+  {days:20,count:5},{days:21,count:4},{days:22,count:4},{days:24,count:2}
+];
+
+// ══════════════════════════════════ NAV ═══════════════════════════════════════
+function nav(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ══════════════════════════════════ CHARTS ════════════════════════════════════
+const R='#C00000', O='#ED7D31', B='#2E75B6', G='#70AD47';
+
+// Type bar
+new Chart(document.getElementById('c-type'),{
+  type:'bar',
+  data:{
+    labels:['RBND Breach','Reattempt Breach','Delay Dispatch'],
+    datasets:[{data:[21227,74092,10242],backgroundColor:[R,O,B],borderRadius:5,borderSkipped:false}]
+  },
+  options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw.toLocaleString()+' units'}}},
+    scales:{y:{grid:{color:'#f0f4f8'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}}},responsive:true}
+});
+
+// Donut
+new Chart(document.getElementById('c-donut'),{
+  type:'doughnut',
+  data:{
+    labels:['RBND (21,227 — 20.1%)','Reattempt (74,092 — 70.2%)','Delay (10,242 — 9.7%)'],
+    datasets:[{data:[21227,74092,10242],backgroundColor:[R,O,B],borderWidth:3,hoverOffset:8}]
+  },
+  options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12,padding:8}}},responsive:true,cutout:'62%'}
+});
+
+// PH stacked bar
+const top15=PH.slice(0,15);
+new Chart(document.getElementById('c-phbar'),{
+  type:'bar',
+  data:{
+    labels:top15.map(p=>p.ph.replace('PHH_','').replace('PickupHub_','PH-')),
+    datasets:[
+      {label:'RBND',data:top15.map(p=>p.rbnd),backgroundColor:R,borderRadius:2},
+      {label:'Reattempt',data:top15.map(p=>p.reattempt),backgroundColor:O,borderRadius:2},
+      {label:'Delay',data:top15.map(p=>p.delay),backgroundColor:B,borderRadius:2}
+    ]
+  },
+  options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},
+    scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45}},y:{stacked:true,grid:{color:'#f0f4f8'}}},responsive:true}
+});
+
+// Distribution
+const dDays=DAYS_DIST.filter(d=>d.days>0);
+new Chart(document.getElementById('c-dist'),{
+  type:'bar',
+  data:{labels:dDays.map(d=>d.days+'d'),datasets:[{data:dDays.map(d=>d.count),backgroundColor:dDays.map(d=>d.days>=15?R:d.days>=8?O:B),borderRadius:3}]},
+  options:{plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>c[0].label+' breach days',label:c=>c.raw+' sellers'}}},
+    scales:{x:{ticks:{font:{size:9}}},y:{grid:{color:'#f0f4f8'}}},responsive:true}
+});
+
+// Mini trend line
+new Chart(document.getElementById('c-minitrend'),{
+  type:'line',
+  data:{
+    labels:DAILY.map(d=>d.date.slice(3,5)+'/7'),
+    datasets:[{label:'Breach %',data:DAILY.map(d=>d.breach_pct),
+      borderColor:R,backgroundColor:'rgba(192,0,0,.08)',fill:true,
+      pointRadius:4,pointBackgroundColor:d=>d.raw>=6?R:'#fff',pointBorderColor:R,
+      pointHoverRadius:6,tension:.3}]
+  },
+  options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'% breach'}}},
+    scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'#f0f4f8'},suggestedMax:10},
+      x:{ticks:{font:{size:9}}}},responsive:true}
+});
+
+// Trend combo
+new Chart(document.getElementById('c-trend'),{
+  type:'bar',
+  data:{
+    labels:DAILY.map(d=>d.date.slice(0,5)),
+    datasets:[
+      {type:'bar',label:'Total Units',data:DAILY.map(d=>d.total_units),backgroundColor:'#D6E4F0',yAxisID:'y',order:2},
+      {type:'bar',label:'Breach Units',data:DAILY.map(d=>d.breach_units),backgroundColor:'rgba(192,0,0,.75)',yAxisID:'y',order:1},
+      {type:'line',label:'Breach %',data:DAILY.map(d=>d.breach_pct),
+        borderColor:O,backgroundColor:'transparent',pointRadius:4,pointBackgroundColor:O,tension:.3,yAxisID:'y2',order:0}
+    ]
+  },
+  options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},
+    scales:{y:{grid:{color:'#f0f4f8'}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%'}},
+      x:{ticks:{font:{size:9},maxRotation:45}}},responsive:true}
+});
+
+// Trend by type
+new Chart(document.getElementById('c-trend-type'),{
+  type:'bar',
+  data:{
+    labels:DAILY.map(d=>d.date.slice(0,5)),
+    datasets:[
+      {label:'RBND',data:DAILY.map(d=>d.rbnd),backgroundColor:R,borderRadius:2},
+      {label:'Reattempt',data:DAILY.map(d=>d.reat),backgroundColor:O,borderRadius:2},
+      {label:'Delay',data:DAILY.map(d=>d.delay),backgroundColor:B,borderRadius:2}
+    ]
+  },
+  options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},
+    scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45}},y:{stacked:true,grid:{color:'#f0f4f8'}}},responsive:true}
+});
+
+// ══════════════════════════════════ TREND TABLE ═══════════════════════════════
+const maxBP=Math.max(...DAILY.map(d=>d.breach_pct));
+document.getElementById('trend-tbody').innerHTML=DAILY.map(d=>{
+  const w=(d.breach_pct/maxBP*100).toFixed(0);
+  const clr=d.breach_pct>=6?R:d.breach_pct>=4?O:B;
+  return `<tr${d.breach_pct>=6?' style="background:#fff8f8"':''}>
+    <td><strong>${d.date}</strong>${d.breach_pct>=6?' <span class="badge badge-crit">Spike</span>':''}</td>
+    <td style="text-align:right">${d.total_units.toLocaleString()}</td>
+    <td style="text-align:right">${d.breach_units.toLocaleString()}</td>
+    <td style="text-align:right;color:${clr};font-weight:700">${d.breach_pct}%</td>
+    <td><div class="mbar"><div class="mbar-fill" style="width:${w}%;background:${clr}"></div></div></td>
+  </tr>`;
+}).join('');
+
+// ══════════════════════════════════ SELLER TABLE ══════════════════════════════
+let sSortCol='breach_days', sSortDir='desc';
+
+function getSev(days){
+  if(days>=15)return['badge-crit','Critical'];
+  if(days>=8) return['badge-warn','Moderate'];
+  if(days>=1) return['badge-low','Low'];
+  return['badge-clean','Clean'];
+}
+
+function sortSeller(col){
+  if(sSortCol===col) sSortDir=sSortDir==='asc'?'desc':'asc';
+  else{sSortCol=col;sSortDir='desc';}
+  document.querySelectorAll('#seller-tbl thead th').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+  });
+  // find clicked header
+  renderSellers();
+}
+
+function renderSellers(){
+  const q=document.getElementById('s-search').value.toLowerCase();
+  const minD=+document.getElementById('s-days').value||0;
+  const typeF=document.getElementById('s-type').value;
+  const sevF=document.getElementById('s-sev').value;
+
+  let rows=SELLERS.filter(s=>{
+    if(q&&!s.seller_id.toLowerCase().includes(q))return false;
+    if(s.breach_days<minD)return false;
+    if(typeF==='rbnd'&&s.rbnd_days===0)return false;
+    if(typeF==='reat'&&s.reat_days===0)return false;
+    if(typeF==='delay'&&s.delay_days===0)return false;
+    if(sevF==='crit'&&s.breach_days<15)return false;
+    if(sevF==='warn'&&(s.breach_days<8||s.breach_days>=15))return false;
+    if(sevF==='low'&&(s.breach_days<1||s.breach_days>=8))return false;
+    return true;
+  });
+
+  rows=[...rows].sort((a,b)=>{
+    const av=a[sSortCol],bv=b[sSortCol];
+    if(typeof av==='string') return sSortDir==='asc'?av.localeCompare(bv):bv.localeCompare(av);
+    return sSortDir==='asc'?av-bv:bv-av;
+  });
+
+  const breached=rows.filter(s=>s.breach_days>0);
+  const avg=breached.length?breached.reduce((s,r)=>s+r.breach_days,0)/breached.length:0;
+  document.getElementById('avg-days').textContent=avg.toFixed(1);
+  document.getElementById('s-count').textContent=`Showing ${rows.length} sellers`;
+
+  document.getElementById('seller-tbody').innerHTML=rows.map((s,i)=>{
+    const[cls,lbl]=getSev(s.breach_days);
+    const w=(s.breach_days/24*100).toFixed(0);
+    const bclr=s.breach_days>=15?R:s.breach_days>=8?O:B;
+    return `<tr${i<5?' class="top5"':''}>
+      <td style="font-family:monospace;font-size:11px">${s.seller_id}</td>
+      <td style="text-align:right">${s.total_units.toLocaleString()}</td>
+      <td style="text-align:right">${s.breach_units.toLocaleString()}</td>
+      <td style="text-align:right;font-weight:600;color:${s.breach_pct>=20?R:s.breach_pct>=10?O:'inherit'}">${s.breach_pct.toFixed(1)}%</td>
+      <td style="text-align:right">
+        <strong style="color:${bclr}">${s.breach_days}</strong><span style="color:#aaa">/26</span>
+        <div class="mbar"><div class="mbar-fill" style="width:${w}%;background:${bclr}"></div></div>
+      </td>
+      <td style="text-align:right;color:${R}">${s.rbnd_days||'—'}</td>
+      <td style="text-align:right;color:${O}">${s.reat_days||'—'}</td>
+      <td style="text-align:right;color:${B}">${s.delay_days||'—'}</td>
+      <td><span class="badge ${cls}">${lbl}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════ PH TABLE ══════════════════════════════════
+function renderPH(){
+  const q=document.getElementById('ph-search').value.toLowerCase();
+  const sortCol=document.getElementById('ph-sort').value;
+  const filt=document.getElementById('ph-filter').value;
+  let rows=PH.filter(p=>{
+    if(q&&!p.ph.toLowerCase().includes(q))return false;
+    if(filt==='high'&&p.breach_pct<10)return false;
+    if(filt==='mid'&&(p.breach_pct<5||p.breach_pct>=10))return false;
+    if(filt==='low'&&p.breach_pct>=5)return false;
+    return true;
+  });
+  rows=[...rows].sort((a,b)=>b[sortCol]-a[sortCol]);
+  document.getElementById('ph-count').textContent=`Showing ${rows.length} PHs`;
+  document.getElementById('ph-tbody').innerHTML=rows.map(p=>{
+    const bclr=p.breach_pct>=20?R:p.breach_pct>=10?O:p.breach_pct>=5?'#bf5500':'inherit';
+    const scls=p.breach_seller_pct>=80?'badge-crit':p.breach_seller_pct>=60?'badge-warn':'badge-low';
+    return `<tr>
+      <td><strong>${p.ph}</strong></td>
+      <td style="text-align:right">${p.total_units.toLocaleString()}</td>
+      <td style="text-align:right;font-weight:600">${p.breach_units.toLocaleString()}</td>
+      <td style="text-align:right;color:${bclr};font-weight:700">${p.breach_pct.toFixed(1)}%</td>
+      <td style="text-align:right">${p.total_sellers}</td>
+      <td style="text-align:right">${p.breach_sellers}</td>
+      <td style="text-align:right"><span class="badge ${scls}">${p.breach_seller_pct.toFixed(1)}%</span></td>
+      <td style="text-align:right;color:${R}">${p.rbnd.toLocaleString()}</td>
+      <td style="text-align:right;color:${O}">${p.reattempt.toLocaleString()}</td>
+      <td style="text-align:right;color:${B}">${p.delay.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Init
+renderSellers();
+renderPH();
+</script>
+</body>
+</html>
