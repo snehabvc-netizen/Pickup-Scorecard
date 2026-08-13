@@ -550,8 +550,8 @@ const GH_DATA_FILE = 'data.json';  // file path in repo
 
 function ghConfig() {
   return {
-    owner:  localStorage.getItem('gh_owner')  || '',
-    repo:   localStorage.getItem('gh_repo')   || '',
+    owner:  localStorage.getItem('gh_owner')  || 'snehabvc-netizen',
+    repo:   localStorage.getItem('gh_repo')   || 'Pickup-Scorecard',
     branch: localStorage.getItem('gh_branch') || 'main',
     token:  localStorage.getItem('gh_token')  || '',
   };
@@ -635,8 +635,10 @@ async function publishToGitHub() {
     return;
   }
   if (!c.token) {
-    alert('A Personal Access Token (PAT) is required to publish data. Open ⚙️ GitHub Setup and enter your PAT.');
-    return;
+    const tok = window.prompt('Enter your GitHub Personal Access Token (PAT) to publish data.\nIt will be saved in this browser for future use.\n\nCreate one at: github.com → Settings → Developer settings → Personal access tokens → Fine-grained → repo:contents write');
+    if (!tok || !tok.trim()) return;
+    localStorage.setItem('gh_token', tok.trim());
+    c.token = tok.trim();
   }
   const btn = document.getElementById('publish-btn');
   btn.textContent = '⏳ Publishing…'; btn.disabled = true;
