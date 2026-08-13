@@ -160,6 +160,9 @@ tbody tr:hover td{background:#f0f8ff}
 .kpi-input-group input{border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--blue);outline:none;width:100%}
 .kpi-input-group input:focus{border-color:var(--mid);box-shadow:0 0 0 2px rgba(46,117,182,.15)}
 .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.sum-tbl{width:100%;border-collapse:collapse;font-size:11px}.sum-tbl th{background:#f0f4f8;color:#555;font-weight:600;padding:4px 8px;text-align:left;border-bottom:1px solid #ddd}.sum-tbl td{padding:4px 8px;border-bottom:1px solid #f4f4f4;color:#333}.sum-tbl tr:hover td{background:#fafafa}.bu-filter-row:hover td{background:#e8f4fd!important;color:#1a73e8}.ph-chip{border:1px solid #ccc;background:#f5f5f5;border-radius:12px;padding:3px 10px;font-size:11px;cursor:pointer;white-space:nowrap}.ph-chip:hover{background:#e8f0fe;border-color:#4a90e2;color:#1a73e8}.ph-chip.active{background:#1a73e8;border-color:#1a73e8;color:#fff}.sum-tbl .num{text-align:right;font-variant-numeric:tabular-nums}.sum-tbl .bar-cell{width:60px}.mini-bar{height:6px;background:#E8EEF4;border-radius:3px;overflow:hidden}.mini-bar-fill{height:100%;background:var(--red);border-radius:3px}.sum-card-row{display:flex;gap:10px;margin-bottom:10px}.sum-card-row .scard{flex:1}.sum-title{font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.df-chip{border:1px solid #2E75B6;border-radius:12px;padding:3px 10px;font-size:11px;cursor:pointer;background:#fff;color:#2E75B6;font-weight:600;transition:all .15s}
+.df-chip:hover{background:#e8f0fe}
+.df-chip.df-chip-on{background:#2E75B6;color:#fff}
 </style>
 </head>
 <body>
@@ -276,6 +279,16 @@ tbody tr:hover td{background:#f0f8ff}
     <div class="tab" onclick="nav('ph',this)">🏢 PH Analysis</div>
     <div class="tab" onclick="nav('trend',this)">📅 Daily Trend</div>
     <div class="tab" onclick="nav('critical',this)">🚨 Critical Sellers</div>
+  </div>
+
+  <!-- DATE FILTER BAR -->
+  <div id="date-filter-bar" style="background:#f0f4fa;border-bottom:1px solid #dce3ef;padding:8px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px">
+    <span style="font-weight:700;color:#1F4E79;white-space:nowrap">📅 Date Filter:</span>
+    <div id="df-month-wrap" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+    <div style="width:1px;height:20px;background:#ccc;margin:0 4px"></div>
+    <div id="df-week-wrap" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+    <button onclick="clearDateFilter()" id="df-clear-btn" style="display:none;margin-left:auto;border:1px solid #C00;border-radius:5px;padding:3px 10px;font-size:11px;cursor:pointer;background:#fff0f0;color:#C00;font-weight:600">✕ Clear filter</button>
+    <span id="df-label" style="color:#888;font-size:11px;margin-left:4px"></span>
   </div>
 
   <!-- OVERVIEW -->
@@ -531,6 +544,9 @@ let PH_DATA = [];  // ph array
 let CRITICAL_SELLERS = [];  // ekart issue sellers
 let DAILY = [];    // daily array
 let DIST = [];     // breach days distribution
+let _rawData   = null; // raw per-date data for date-filter re-aggregation
+let _allDates  = [];   // all dates from CSV (full set, immutable)
+let _selDates  = null; // null=all; Set<string> when filtered
 let CHARTS = {};   // chart instances
 let sSortCol = 'breach_days', sSortDir = 'desc';
 let totalFileRows = 0;
@@ -847,6 +863,9 @@ function startProcess(file) {
   // Flat objects for window computations (fast string-key lookup, only breach rows)
   const sellerDateBreach = Object.create(null); // 'seller|date' -> breach units (fast)
   const phDateBreach     = Object.create(null);
+  const sellerDayB       = Object.create(null); // seller|date → {rb,re,dl} breach units by type
+  const phDayB           = Object.create(null); // ph|date → {rb,re,dl} breach units by type
+  const ekartDayB        = Object.create(null); // seller|date → {rb,re,dl} breach units (ekart)
   const sellerDateUnits  = Object.create(null); // 'seller|date' -> total units (for window denominator)
   const phDateUnits      = Object.create(null);
   // Ekart issue tracking
@@ -978,6 +997,10 @@ function startProcess(file) {
             else if (breach==='Delay Dispatch')   { ebd.delay.add(date); ebu.delay+=units; }
             const ebk = seller+'|'+date;
             ekartDateBreach[ebk] = (ekartDateBreach[ebk]||0) + units;
+            if (!ekartDayB[ebk]) ekartDayB[ebk]={rb:0,re:0,dl:0};
+            if (breach==='RBND Breach')           ekartDayB[ebk].rb+=units;
+            else if (breach==='Reattempt Breach') ekartDayB[ebk].re+=units;
+            else if (breach==='Delay Dispatch')   ekartDayB[ebk].dl+=units;
             if (!ekartPH.has(ph)) ekartPH.set(ph, {units:0, sellers:new Set()});
             const epb = ekartPH.get(ph); epb.units+=units; epb.sellers.add(seller);
           }
@@ -1022,8 +1045,13 @@ function startProcess(file) {
             else if (breach==='Delay Dispatch') db.delay+=units;
             const bk = seller+'|'+date;
             sellerDateBreach[bk] = (sellerDateBreach[bk]||0) + units;
+            if (!sellerDayB[bk]) sellerDayB[bk]={rb:0,re:0,dl:0};
             const pk = ph+'|'+date;
             phDateBreach[pk] = (phDateBreach[pk]||0) + units;
+            if (!phDayB[pk]) phDayB[pk]={rb:0,re:0,dl:0};
+            if (breach==='RBND Breach')           { sellerDayB[bk].rb+=units; phDayB[pk].rb+=units; }
+            else if (breach==='Reattempt Breach') { sellerDayB[bk].re+=units; phDayB[pk].re+=units; }
+            else if (breach==='Delay Dispatch')   { sellerDayB[bk].dl+=units; phDayB[pk].dl+=units; }
           }
         }
       }
@@ -1204,9 +1232,20 @@ function startProcess(file) {
         }
         CRITICAL_SELLERS.sort((a,b)=>b.breach_units-a.breach_units);
 
+        // Save raw data for date-filter re-aggregation
+        _rawData = {
+          sellerUnits, sellerDateUnits, sellerDateBreach, sellerDayB,
+          phUnits, phDateUnits, phDateBreach, phDayB, phSellers,
+          ekartUnits, ekartSellerDateUnits, ekartDateBreach, ekartDayB,
+          dateUnits, dateBreach,
+          lowDRRSellers, incubSellers, ekartLowDRRSellers, ekartIncubSellers,
+          sellerPH, ekartBDates, ekartBUnits,
+        };
+
         // Build DAILY
         DAILY = [];
         const allDates = [...new Set([...dateUnits.keys(),...dateBreach.keys()])].sort();
+        _allDates = allDates; _selDates = null; // reset filter on new upload
         for (const date of allDates) {
           const tu = dateUnits.get(date)||0;
           const db = dateBreach.get(date)||{units:0,rbnd:0,reat:0,delay:0};
@@ -1375,6 +1414,7 @@ function buildDashboard() {
   AGG._orig = { totalSellers:AGG.totalSellers, breachedSellers:AGG.breachedSellers,
     totalUnits:AGG.totalUnits, breachUnits:AGG.breachUnits, breachPct:AGG.breachPct };
   initKPIInputs();
+  buildDateFilterUI();
   buildOverviewCharts();
   buildTrendTable();
   buildTrendCharts();
@@ -2003,6 +2043,228 @@ function renderCritical() {
       <td>${tags}</td>
     </tr>`;
   }).join('');
+}
+
+// ══════ DATE FILTER ══════════════════════════════════════════════════════════
+function isoWeekMon(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = (d.getDay()+6)%7; // Mon=0
+  const mon = new Date(d); mon.setDate(d.getDate()-day);
+  return mon.toISOString().slice(0,10);
+}
+function weekLabel(dateStr) {
+  const d  = new Date(dateStr + 'T00:00:00');
+  const day = (d.getDay()+6)%7;
+  const mon = new Date(d); mon.setDate(d.getDate()-day);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt = dt => dt.toLocaleString('en-IN',{day:'2-digit',month:'short'});
+  return fmt(mon)+' – '+fmt(sun);
+}
+
+function buildDateFilterUI() {
+  if (!_allDates || !_allDates.length) return;
+  const monthMap = {}; // 'YYYY-MM' -> [dates]
+  const weekMap  = {}; // monDateStr -> {label, dates:[]}
+  _allDates.forEach(d => {
+    const ym = d.slice(0,7);
+    if (!monthMap[ym]) monthMap[ym] = [];
+    monthMap[ym].push(d);
+    const wk = isoWeekMon(d);
+    if (!weekMap[wk]) weekMap[wk] = {label: weekLabel(d), dates:[]};
+    weekMap[wk].dates.push(d);
+  });
+  window._dfMonthMap = monthMap;
+  window._dfWeekMap  = weekMap;
+
+  const mWrap = document.getElementById('df-month-wrap');
+  if (!mWrap) return;
+  mWrap.innerHTML = '<span style="color:#555;font-weight:600;margin-right:4px">Month:</span>' +
+    Object.keys(monthMap).sort().map(ym => {
+      const mon = new Date(ym+'-01').toLocaleString('en-IN',{month:'short',year:'numeric'});
+      return `<button class="df-chip" data-type="month" data-key="${ym}" onclick="toggleDateChip(this)">${mon}</button>`;
+    }).join('');
+
+  const wWrap = document.getElementById('df-week-wrap');
+  wWrap.innerHTML = '<span style="color:#555;font-weight:600;margin-right:4px">Week:</span>' +
+    Object.keys(weekMap).sort().map(wk => {
+      return `<button class="df-chip" data-type="week" data-key="${wk}" onclick="toggleDateChip(this)">${weekMap[wk].label}</button>`;
+    }).join('');
+}
+
+function toggleDateChip(btn) { btn.classList.toggle('df-chip-on'); applyDateFilter(); }
+
+function applyDateFilter() {
+  const activeMonths = new Set([...document.querySelectorAll('.df-chip[data-type="month"].df-chip-on')].map(b=>b.dataset.key));
+  const activeWeeks  = new Set([...document.querySelectorAll('.df-chip[data-type="week"].df-chip-on')].map(b=>b.dataset.key));
+  if (!activeMonths.size && !activeWeeks.size) {
+    _selDates = null;
+    document.getElementById('df-clear-btn').style.display = 'none';
+    document.getElementById('df-label').textContent = '';
+    recomputeForDates(_allDates); return;
+  }
+  document.getElementById('df-clear-btn').style.display = '';
+  const sel = new Set();
+  activeMonths.forEach(ym => (window._dfMonthMap[ym]||[]).forEach(d=>sel.add(d)));
+  activeWeeks.forEach(wk  => ((window._dfWeekMap[wk]||{dates:[]}).dates).forEach(d=>sel.add(d)));
+  _selDates = sel;
+  const dateArr = _allDates.filter(d=>sel.has(d));
+  document.getElementById('df-label').textContent = dateArr.length+' day'+(dateArr.length!==1?'s':'')+' selected';
+  recomputeForDates(dateArr);
+}
+
+function clearDateFilter() {
+  document.querySelectorAll('.df-chip').forEach(b=>b.classList.remove('df-chip-on'));
+  _selDates = null;
+  document.getElementById('df-clear-btn').style.display = 'none';
+  document.getElementById('df-label').textContent = '';
+  recomputeForDates(_allDates);
+}
+
+function recomputeForDates(dateArr) {
+  if (!_rawData || !dateArr || !dateArr.length) return;
+  const R = _rawData;
+  const dSet  = new Set(dateArr);
+  const dSort = [...dateArr].sort();
+  const fW7   = new Set(dSort.slice(-7));
+  const fW14  = new Set(dSort.slice(-14));
+  const fW30  = new Set(dSort.slice(-30));
+
+  // ── SELLERS ───────────────────────────────────────────────────────────────
+  SELLERS = [];
+  R.sellerUnits.forEach((_, sid) => {
+    let tu=0,bU=0,rb=0,re=0,dl=0,bDays=0,rbDays=0,reDays=0,dlDays=0,freq=0,b7=0,b14=0,b30=0,t7=0,t14=0,t30=0;
+    dSort.forEach(d=>{
+      const du=R.sellerDateUnits[sid+'|'+d]||0, db=R.sellerDateBreach[sid+'|'+d]||0;
+      tu+=du;
+      if(db>0){bU+=db;bDays++;
+        const dbt=R.sellerDayB[sid+'|'+d];
+        if(dbt){if(dbt.rb>0){rb+=dbt.rb;rbDays++;}if(dbt.re>0){re+=dbt.re;reDays++;}if(dbt.dl>0){dl+=dbt.dl;dlDays++;}}
+      }
+      if(du>0&&db/du>0.10)freq++;
+      if(fW7.has(d)){b7+=db;t7+=du;} if(fW14.has(d)){b14+=db;t14+=du;} if(fW30.has(d)){b30+=db;t30+=du;}
+    });
+    if(tu===0)return;
+    const sm=getSM(sid);
+    SELLERS.push({
+      seller_id:sid,seller_name:sm.name||sid,seller_bu:getBU(sm.buIdx),seller_owner:getOwner(sm.ownerIdx),
+      is_cluster:CLUSTER_IDS.has(sid),is_low_drr:R.lowDRRSellers.has(sid),is_incub:R.incubSellers.has(sid),
+      total_units:tu,breach_units:bU,breach_pct:tu>0?+(bU/tu*100).toFixed(2):0,
+      breach_days:bDays,rbnd_days:rbDays,reat_days:reDays,delay_days:dlDays,
+      rbnd_units:rb,reat_units:re,delay_units:dl,freq_breach_days:freq,
+      breach_7d:b7,breach_7d_pct:+(b7/(t7||1)*100).toFixed(1),
+      breach_14d:b14,breach_14d_pct:+(b14/(t14||1)*100).toFixed(1),
+      breach_30d:b30,breach_30d_pct:+(b30/(t30||1)*100).toFixed(1),
+    });
+  });
+  SELLERS.sort((a,b)=>b.breach_units-a.breach_units);
+
+  // ── PH_DATA ───────────────────────────────────────────────────────────────
+  const breachedSellerSet = new Set(SELLERS.filter(s=>s.breach_days>0).map(s=>s.seller_id));
+  const phTagMap2 = new Map();
+  SELLERS.forEach(s=>{
+    const sph=R.sellerPH.get(s.seller_id)||'(blank)';
+    if(!phTagMap2.has(sph))phTagMap2.set(sph,{cluster:0,lowdrr:0,incub:0});
+    const pt=phTagMap2.get(sph);
+    if(s.is_cluster)pt.cluster++;if(s.is_low_drr)pt.lowdrr++;if(s.is_incub)pt.incub++;
+  });
+  PH_DATA = [];
+  R.phUnits.forEach((_,ph)=>{
+    let tu=0,bU=0,rb=0,re=0,dl=0,freq=0,b7=0,b14=0,b30=0,t7=0,t14=0,t30=0;
+    dSort.forEach(d=>{
+      const du=R.phDateUnits[ph+'|'+d]||0, db=R.phDateBreach[ph+'|'+d]||0;
+      tu+=du;bU+=db;
+      const dbt=R.phDayB[ph+'|'+d];
+      if(dbt){rb+=dbt.rb;re+=dbt.re;dl+=dbt.dl;}
+      if(du>0&&db/du>0.10)freq++;
+      if(fW7.has(d)){b7+=db;t7+=du;} if(fW14.has(d)){b14+=db;t14+=du;} if(fW30.has(d)){b30+=db;t30+=du;}
+    });
+    if(tu===0)return;
+    const ts=R.phSellers.get(ph)||new Set();
+    const bSellers=new Set([...ts].filter(s=>breachedSellerSet.has(s)));
+    const tags=phTagMap2.get(ph)||{cluster:0,lowdrr:0,incub:0};
+    PH_DATA.push({
+      ph,bu:'',total_units:tu,total_sellers:ts.size,
+      breach_units:bU,breach_sellers:bSellers.size,rbnd:rb,reattempt:re,delay:dl,
+      breach_pct:tu>0?+(bU/tu*100).toFixed(2):0,
+      breach_seller_pct:ts.size>0?+(bSellers.size/ts.size*100).toFixed(1):0,
+      freq_breach_days:freq,
+      breach_7d:b7,breach_7d_pct:+(b7/(t7||1)*100).toFixed(1),
+      breach_14d:b14,breach_14d_pct:+(b14/(t14||1)*100).toFixed(1),
+      breach_30d:b30,breach_30d_pct:+(b30/(t30||1)*100).toFixed(1),
+      cluster_sellers:tags.cluster,lowdrr_sellers:tags.lowdrr,incub_sellers:tags.incub,
+    });
+  });
+  PH_DATA.sort((a,b)=>b.breach_units-a.breach_units);
+
+  // ── CRITICAL_SELLERS ──────────────────────────────────────────────────────
+  CRITICAL_SELLERS = [];
+  R.ekartUnits.forEach((_,sid)=>{
+    let tu=0,bU=0,rb=0,re=0,dl=0,bDays=0,rbDays=0,reDays=0,dlDays=0,freq=0,b7=0,b14=0,b30=0;
+    dSort.forEach(d=>{
+      const du=R.ekartSellerDateUnits[sid+'|'+d]||0, db=R.ekartDateBreach[sid+'|'+d]||0;
+      tu+=du;
+      if(db>0){bU+=db;bDays++;}
+      const dbt=R.ekartDayB[sid+'|'+d];
+      if(dbt){if(dbt.rb>0){rb+=dbt.rb;rbDays++;}if(dbt.re>0){re+=dbt.re;reDays++;}if(dbt.dl>0){dl+=dbt.dl;dlDays++;}}
+      if(du>0&&db/du>0.10)freq++;
+      if(fW7.has(d))b7+=db; if(fW14.has(d))b14+=db; if(fW30.has(d))b30+=db;
+    });
+    if(tu===0)return;
+    const sm=getSM(sid);
+    const sev=tu>0&&bU/tu>0.3?'High':tu>0&&bU/tu>0.1?'Medium':'Low';
+    CRITICAL_SELLERS.push({
+      seller_id:sid,seller_name:sm.name||sid,seller_bu:getBU(sm.buIdx),seller_owner:getOwner(sm.ownerIdx),
+      ph:R.sellerPH.get(sid)||'(blank)',
+      is_cluster:CLUSTER_IDS.has(sid),is_low_drr:R.ekartLowDRRSellers.has(sid),is_incub:R.ekartIncubSellers.has(sid),
+      total_units:tu,breach_units:bU,breach_pct:tu>0?+(bU/tu*100).toFixed(2):0,
+      breach_days:bDays,rbnd_days:rbDays,reat_days:reDays,delay_days:dlDays,
+      rbnd_units:rb,reat_units:re,delay_units:dl,freq_breach_days:freq,
+      breach_7d:b7,breach_7d_pct:+(b7/(tu||1)*100).toFixed(1),
+      breach_14d:b14,breach_14d_pct:+(b14/(tu||1)*100).toFixed(1),
+      breach_30d:b30,breach_30d_pct:+(b30/(tu||1)*100).toFixed(1),severity:sev,
+    });
+  });
+  CRITICAL_SELLERS.sort((a,b)=>b.breach_units-a.breach_units);
+
+  // ── DAILY ─────────────────────────────────────────────────────────────────
+  DAILY = dSort.map(d=>{
+    const tu=R.dateUnits.get(d)||0;
+    const db=R.dateBreach.get(d)||{units:0,rbnd:0,reat:0,delay:0};
+    return{date:d,total_units:tu,breach_units:db.units,
+      breach_pct:tu>0?+(db.units/tu*100).toFixed(1):0,
+      rbnd:db.rbnd,reat:db.reat,delay:db.delay};
+  });
+
+  // ── AGG ───────────────────────────────────────────────────────────────────
+  const bS=SELLERS.filter(s=>s.breach_days>0);
+  const tU=SELLERS.reduce((a,s)=>a+s.total_units,0);
+  const bU2=SELLERS.reduce((a,s)=>a+s.breach_units,0);
+  const maxDay=DAILY.reduce((m,d)=>d.breach_pct>m.breach_pct?d:m,{breach_pct:0,date:''});
+  AGG={
+    totalSellers:SELLERS.length,breachedSellers:bS.length,
+    totalUnits:tU,breachUnits:bU2,breachPct:tU>0?(bU2/tU*100).toFixed(1):0,
+    totalPHs:PH_DATA.length,breachedPHs:PH_DATA.filter(p=>p.breach_units>0).length,
+    rbndTotal:SELLERS.reduce((a,s)=>a+s.rbnd_units,0),
+    reatTotal:SELLERS.reduce((a,s)=>a+s.reat_units,0),
+    delayTotal:SELLERS.reduce((a,s)=>a+s.delay_units,0),
+    maxDayDate:maxDay.date,maxDayPct:maxDay.breach_pct,
+    totalDays:DAILY.length,embargoExcluded:AGG?AGG.embargoExcluded||0:0,
+  };
+
+  // ── Re-render ─────────────────────────────────────────────────────────────
+  buildOverviewCharts();
+  if(typeof buildTrendTable==='function')buildTrendTable();
+  if(typeof buildTrendCharts==='function')buildTrendCharts();
+  if(typeof buildTrendSummary==='function')buildTrendSummary();
+  if(typeof initBUDropdown==='function')initBUDropdown();
+  renderSellers();
+  renderPH();
+  renderCritical();
+  const kset=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  kset('kpi-total-sellers',fmt(AGG.totalSellers));
+  kset('kpi-breached-sellers',fmt(AGG.breachedSellers));
+  kset('kpi-total-units',fmt(AGG.totalUnits));
+  kset('kpi-breach-units',fmt(AGG.breachUnits));
 }
 
 </script>
