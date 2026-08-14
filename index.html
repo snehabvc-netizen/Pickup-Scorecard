@@ -216,16 +216,36 @@ tbody tr:hover td{background:#f0f8ff}
     </div>
     <p class="sub">Upload the Large-NFBF Pickup Score Card CSV to auto-generate the full breach analysis dashboard.</p>
 
-    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-      <div class="icon">📂</div>
-      <p>Drag &amp; drop your CSV here, or click to browse</p>
-      <p class="hint">Supports files up to 500MB &nbsp;·&nbsp; Processing happens in your browser — data never leaves your device</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:2px">
+      <div style="flex:1;min-width:240px">
+        <p style="font-weight:700;color:#1F4E79;margin:0 0 6px;font-size:13px">① Breach CSV <span style="color:#c00">*</span></p>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="icon">📊</div>
+          <p>Drag &amp; drop or click to browse</p>
+          <p class="hint">Large-NFBF Pickup Score Card CSV</p>
+          <div id="breach-file-name" style="margin-top:6px;font-size:11px;color:#2E75B6;font-weight:600"></div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <p style="font-weight:700;color:#375623;margin:0 0 6px;font-size:13px">② Cluster Sellers XLSX <span style="color:#888;font-weight:400">(optional)</span></p>
+        <div class="drop-zone" id="drop-zone-cluster" onclick="document.getElementById('cluster-input').click()" style="border-color:#70AD47">
+          <div class="icon">📦</div>
+          <p>Drag &amp; drop or click to browse</p>
+          <p class="hint">Cluster Sellers list.xlsx — Details sheet</p>
+          <div id="cluster-file-name" style="margin-top:6px;font-size:11px;color:#70AD47;font-weight:600"></div>
+        </div>
+      </div>
     </div>
 
-    <input type="file" id="file-input" accept=".csv" onchange="startProcess(this.files[0])">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-upload" style="flex:1" onclick="document.getElementById('file-input').click()">📊 Choose Breach CSV</button>
+      <button class="btn-upload" style="flex:1;background:#70AD47" onclick="document.getElementById('cluster-input').click()">📦 Choose Cluster XLSX</button>
+    </div>
+    <button id="btn-generate" class="btn-upload" style="margin-top:12px;background:#C00000;display:none;font-size:15px;padding:14px" onclick="doGenerate()">🚀 Generate Dashboard</button>
+
+    <input type="file" id="file-input" accept=".csv" onchange="onBreachFileSelected(this.files[0])" style="display:none">
     <input type="file" id="cluster-input" accept=".xlsx,.xls" style="display:none" onchange="onClusterFileSelected(this.files[0])">
     <input type="file" id="json-input" accept=".json" style="display:none" onchange="loadFromJSONFile(this.files[0])">
-    <button class="btn-upload" onclick="document.getElementById('file-input').click()">📂 Choose CSV File</button>
 
     <div class="or-divider">OR load shared dashboard data</div>
 
@@ -567,7 +587,7 @@ tbody tr:hover td{background:#f0f8ff}
 const dz = document.getElementById('drop-zone');
 dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('drag-over')});
 dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(!f)return;if(f.name.toLowerCase().endsWith('.json'))loadFromJSONFile(f);else startProcess(f);});
+dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(!f)return;if(f.name.toLowerCase().endsWith('.json'))loadFromJSONFile(f);else onBreachFileSelected(f);});
 const dzc=document.getElementById('drop-zone-cluster');
 if(dzc){dzc.addEventListener('dragover',e=>{e.preventDefault();dzc.classList.add('dz-over');});
 dzc.addEventListener('dragleave',()=>dzc.classList.remove('dz-over'));
@@ -944,6 +964,21 @@ function onClusterFileSelected(file) {
     }
   };
   reader.readAsBinaryString(file);
+}
+
+// ═══ Breach file selection (stores file, shows Generate button) ═══════════════
+let _pendingBreachFile = null;
+function onBreachFileSelected(file) {
+  if (!file) return;
+  _pendingBreachFile = file;
+  const bfn = document.getElementById('breach-file-name');
+  if (bfn) bfn.textContent = '✓ ' + file.name;
+  const btn = document.getElementById('btn-generate');
+  if (btn) btn.style.display = 'block';
+}
+function doGenerate() {
+  if (!_pendingBreachFile) { showErr('Please select a Breach CSV file first.'); return; }
+  startProcess(_pendingBreachFile);
 }
 
 // ═══════════════════════════════════════════ PROCESS ══════════════════════════
@@ -1422,7 +1457,7 @@ function startProcess(file) {
         setTimeout(()=>{
           document.getElementById('proc-screen').style.display='none';
           document.getElementById('dash-screen').style.display='block';
-          requestAnimationFrame(()=>{ buildDashboard(); });
+          requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ buildDashboard(); }); });
           // Briefly show column detection status
           const notFound = ['lowdrr','lowDRRStatus','incub','issueType'].filter(k=>!colMap[k]);
           if (notFound.length) {
@@ -1521,6 +1556,15 @@ function buildPHSummary() {
         <tbody>${topPH.map(p=>`<tr><td>${esc(p.ph)}</td><td class="num">${fmt(p.breach_units)}</td><td class="num">${p.breach_pct}%</td></tr>`).join('')}</tbody></table>
       </div>
     </div>`;
+}
+
+// Format a date string (MM-DD-YYYY or YYYY-MM-DD) as 'D Mon'
+function fmtDateLbl(ds) {
+  const p=ds.split('-');
+  let d,m;
+  if(p.length===3&&p[2].length===4){d=+p[1];m=+p[0]-1;}// MM-DD-YYYY
+  else{d=+p[2];m=+p[1]-1;}// YYYY-MM-DD
+  return d+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m];
 }
 
 function buildDashboard() {
@@ -1667,6 +1711,14 @@ function stat(label,val,bg,clr='inherit'){
 }
 
 function buildOverviewCharts() {
+  if (typeof Chart === 'undefined') {
+    console.error('[SellerDash] Chart.js not loaded — charts unavailable');
+    ['c-phbar','c-top-sellers','c-minitrend'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){const p=document.createElement('p');p.style.cssText='color:#c00;text-align:center;padding:20px;font-size:12px';p.textContent='⚠ Chart.js failed to load. Press Ctrl+Shift+R to hard-refresh.';el.parentNode.replaceChild(p,el);}
+    });
+    return;
+  }
   const mkChart=(id,cfg)=>{
     if(CHARTS[id]) CHARTS[id].destroy();
     CHARTS[id]=new Chart(document.getElementById(id),cfg);
@@ -1712,7 +1764,7 @@ function buildOverviewCharts() {
   });
 
   mkChart('c-minitrend',{type:'line',
-    data:{labels:DAILY.map(d=>{const p=d.date.split('-');return (p[2]||p[0])+'/'+(p[1]||'')}),
+    data:{labels:DAILY.map(d=>fmtDateLbl(d.date)),
       datasets:[{label:'Breach %',data:DAILY.map(d=>d.breach_pct),
         borderColor:R,backgroundColor:'rgba(192,0,0,.08)',fill:true,
         pointRadius:4,pointBackgroundColor:R,tension:.3}]},
@@ -1722,7 +1774,7 @@ function buildOverviewCharts() {
 
 function buildTrendCharts() {
   const mkChart=(id,cfg)=>{if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg);};
-  const lbl=DAILY.map(d=>{const p=d.date.split('-');return (p[2]||p[0])+'/'+(p[1]||'')});
+  const lbl=DAILY.map(d=>fmtDateLbl(d.date));
 
   mkChart('c-trend',{type:'bar',
     data:{labels:lbl,datasets:[
