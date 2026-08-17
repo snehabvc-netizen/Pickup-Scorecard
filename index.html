@@ -794,7 +794,9 @@ function exportDashboardJSON() {
     _version: 2,
     _exportedAt: new Date().toISOString(),
     _exportedBy: 'Seller Breach Dashboard',
-    AGG, SELLERS, PH_DATA, CRITICAL_SELLERS, DAILY, DIST
+    AGG, SELLERS, PH_DATA, CRITICAL_SELLERS, DAILY, DIST,
+    _allDates: _allDates || [],
+    _dateToWeekNum: (_rawData && _rawData.dateToWeekNum) ? _rawData.dateToWeekNum : {}
   };
   const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
   const a = document.createElement('a');
@@ -814,6 +816,11 @@ function loadFromJSON(data) {
     CRITICAL_SELLERS = data.CRITICAL_SELLERS || [];
     DAILY            = data.DAILY || [];
     DIST             = data.DIST || [];
+    // Restore date filter data
+    _allDates = data._allDates && data._allDates.length ? data._allDates : DAILY.map(d=>d.date);
+    _selDates = null;
+    if (!_rawData) _rawData = {};
+    _rawData.dateToWeekNum = data._dateToWeekNum || {};
     document.getElementById('upload-screen').style.display = 'none';
     document.getElementById('proc-screen').style.display = 'none';
     document.getElementById('dash-screen').style.display = 'block';
