@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Seller Breach Dashboard — Upload & Analyse</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -328,10 +327,10 @@ tbody tr:hover td{background:#f0f8ff}
       <button onclick="resetKPIEdits()" style="background:#f0f4f8;border:1px solid #ccc;border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;white-space:nowrap;margin-top:20px">↺ Reset to CSV values</button>
     </div>
     <div class="row col2">
-      <div class="card"><h3>Top 15 PHs by Breach Units</h3><canvas id="c-phbar" height="220"></canvas></div>
-      <div class="card"><h3>Top 15 Breached Sellers (by Breach Units)</h3><canvas id="c-top-sellers" height="220"></canvas></div>
+      <div class="card"><h3>Top 15 PHs by Breach Units</h3><div id="c-phbar" style="width:100%;overflow:hidden"></div></div>
+      <div class="card"><h3>Top 15 Breached Sellers (by Breach Units)</h3><div id="c-top-sellers" style="width:100%;overflow:hidden"></div></div>
     </div>
-    <div class="card"><h3>Daily Breach %</h3><canvas id="c-minitrend" height="100"></canvas></div>
+    <div class="card"><h3>Daily Breach %</h3><div id="c-minitrend" style="width:100%;overflow:hidden"></div></div>
   </div>
 
   <!-- SELLERS -->
@@ -466,6 +465,7 @@ tbody tr:hover td{background:#f0f8ff}
 
   <!-- TREND -->
   <div class="page" id="page-cluster">
+    <div class="summary-panel" id="cluster-summary" style="display:block;padding:0"></div>
     <div class="controls" style="flex-wrap:wrap;gap:8px">
       <input type="text" id="cl-search" placeholder="🔍 Search seller ID / facility / vertical…" oninput="renderCluster()">
       <select id="cl-super-cat" onchange="renderCluster()"><option value="">All Super Categories</option></select>
@@ -508,8 +508,8 @@ tbody tr:hover td{background:#f0f8ff}
   <div class="page" id="page-trend">
     <div class="summary-panel s4" id="trend-summary" style="flex-wrap:wrap"></div>
     <div class="row col2" style="margin-bottom:14px">
-      <div class="card"><h3>Daily Breach Units &amp; Breach %</h3><canvas id="c-trend" height="200"></canvas></div>
-      <div class="card"><h3>Daily Breach by Type</h3><canvas id="c-trend-type" height="200"></canvas></div>
+      <div class="card"><h3>Daily Breach Units &amp; Breach %</h3><div id="c-trend" style="width:100%;overflow:hidden"></div></div>
+      <div class="card"><h3>Daily Breach by Type</h3><div id="c-trend-type" style="width:100%;overflow:hidden"></div></div>
     </div>
     <div class="card">
       <h3>Day-by-Day Table</h3>
@@ -616,7 +616,7 @@ let DIST = [];     // breach days distribution
 let _rawData   = null; // raw per-date data for date-filter re-aggregation
 let _allDates  = [];   // all dates from CSV (full set, immutable)
 let _selDates  = null; // null=all; Set<string> when filtered
-let CHARTS = {};   // chart instances
+// Charts replaced with SVG   // chart instances
 let sSortCol = 'breach_days', sSortDir = 'desc';
 let totalFileRows = 0;
 
@@ -1570,19 +1570,21 @@ function fmtDateLbl(ds) {
 function buildDashboard() {
   AGG._orig = { totalSellers:AGG.totalSellers, breachedSellers:AGG.breachedSellers,
     totalUnits:AGG.totalUnits, breachUnits:AGG.breachUnits, breachPct:AGG.breachPct };
-  initKPIInputs();
-  buildDateFilterUI();
-  buildOverviewCharts();
-  buildTrendTable();
-  buildTrendCharts();
-  buildTrendSummary();
-  initBUDropdown();
-  renderSellers();
-  renderPH();
-  renderCritical();
-  try{buildClusterTab();}catch(e){console.error('buildClusterTab error:',e);}
-  buildSellerSummary();
-  buildPHSummary();
+  const _safe = (name, fn) => { try{fn();}catch(e){console.error('[Dash] '+name+' error:',e);} };
+  _safe('initKPIInputs', initKPIInputs);
+  _safe('buildDateFilterUI', buildDateFilterUI);
+  _safe('buildKPIs', ()=>{ buildKPIs(); buildAlert(); buildSummaryStats(); buildSellerKPIs(); buildPHKPIs(); });
+  _safe('buildOverviewCharts', buildOverviewCharts);
+  _safe('buildTrendTable', buildTrendTable);
+  _safe('buildTrendCharts', buildTrendCharts);
+  _safe('buildTrendSummary', buildTrendSummary);
+  _safe('initBUDropdown', initBUDropdown);
+  _safe('renderSellers', renderSellers);
+  _safe('renderPH', renderPH);
+  _safe('renderCritical', renderCritical);
+  _safe('buildClusterTab', buildClusterTab);
+  _safe('buildSellerSummary', buildSellerSummary);
+  _safe('buildPHSummary', buildPHSummary);
 }
 
 const R='#C00000',O='#ED7D31',B='#2E75B6',G='#70AD47';
@@ -1710,89 +1712,132 @@ function stat(label,val,bg,clr='inherit'){
   return `<div style="display:flex;justify-content:space-between;padding:7px 12px;background:${bg};border-radius:6px;font-size:12px"><span>${label}</span><strong style="color:${clr}">${val}</strong></div>`;
 }
 
-function buildOverviewCharts() {
-  if (typeof Chart === 'undefined') {
-    console.error('[SellerDash] Chart.js not loaded — charts unavailable');
-    ['c-phbar','c-top-sellers','c-minitrend'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el){const p=document.createElement('p');p.style.cssText='color:#c00;text-align:center;padding:20px;font-size:12px';p.textContent='⚠ Chart.js failed to load. Press Ctrl+Shift+R to hard-refresh.';el.parentNode.replaceChild(p,el);}
-    });
-    return;
+// ── SVG Charts (no external dependency) ─────────────────────────────────────
+function _svgStackedBar(el, labels, datasets, height) {
+  if (!el) return;
+  const W = el.offsetWidth || 560;
+  const H = height || 220;
+  const PL=44, PR=10, PT=8, PB=58;
+  const pw = W-PL-PR, ph = H-PT-PB;
+  const totals = labels.map((_,i)=>datasets.reduce((s,d)=>s+(+d.data[i]||0),0));
+  const mx = Math.max(...totals, 1);
+  const bw = Math.max(4, pw/labels.length*0.65);
+  const gp = pw/labels.length;
+  let out = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let i=0;i<=4;i++){
+    const y=(PT+ph-(i/4)*ph).toFixed(1);
+    const v=mx*i/4;
+    out+=`<line x1="${PL}" y1="${y}" x2="${PL+pw}" y2="${y}" stroke="#eef2f7"/>`;
+    out+=`<text x="${PL-3}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="8.5" fill="#aaa">${v>=1000?(v/1000).toFixed(0)+'K':Math.round(v)}</text>`;
   }
-  const mkChart=(id,cfg)=>{
-    if(CHARTS[id]) CHARTS[id].destroy();
-    CHARTS[id]=new Chart(document.getElementById(id),cfg);
-  };
-
-  const top15=PH_DATA.slice(0,15);
-  mkChart('c-phbar',{type:'bar',
-    data:{labels:top15.map(p=>p.ph.replace('PHH_','').replace('PickupHub_','PH-')),
-      datasets:[
-        {label:'RBND',data:top15.map(p=>p.rbnd),backgroundColor:R,borderRadius:2},
-        {label:'Reattempt',data:top15.map(p=>p.reattempt),backgroundColor:O,borderRadius:2},
-        {label:'Delay',data:top15.map(p=>p.delay),backgroundColor:B,borderRadius:2}]},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},
-      scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45}},y:{stacked:true,grid:{color:'#f0f4f8'}}},responsive:true}});
-
-  // Top 15 sellers by breach units
-  const top15s = [...SELLERS].sort((a,b)=>b.breach_units-a.breach_units).slice(0,15);
-  mkChart('c-top-sellers',{type:'bar',
-    data:{
-      labels:top15s.map(s=>{
-        const nm = s.seller_name && s.seller_name!=='Unmanaged' ? s.seller_name : s.seller_id.slice(0,10)+'…';
-        return nm.length>18 ? nm.slice(0,17)+'…' : nm;
-      }),
-      datasets:[
-        {label:'RBND',data:top15s.map(s=>s.rbnd_units||0),backgroundColor:R,borderRadius:2},
-        {label:'Reattempt',data:top15s.map(s=>s.reat_units||0),backgroundColor:O,borderRadius:2},
-        {label:'Delay',data:top15s.map(s=>s.delay_units||0),backgroundColor:B,borderRadius:2}
-      ]
-    },
-    options:{
-      plugins:{
-        legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}},
-        tooltip:{callbacks:{
-          title:ctx=>{const s=top15s[ctx[0].dataIndex];return (s.seller_name&&s.seller_name!=='Unmanaged'?s.seller_name:s.seller_id);},
-          afterTitle:ctx=>{const s=top15s[ctx[0].dataIndex];return 'Breach Days: '+s.breach_days+' | ID: '+s.seller_id.slice(0,12)+'…';}
-        }}
-      },
-      scales:{
-        x:{stacked:true,ticks:{font:{size:9},maxRotation:40}},
-        y:{stacked:true,grid:{color:'#f0f4f8'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}}
-      },responsive:true
-    }
+  labels.forEach((lbl,i)=>{
+    const cx=PL+i*gp+gp/2; const bx=(cx-bw/2).toFixed(1);
+    let cumH=0;
+    datasets.forEach(ds=>{
+      const v=+ds.data[i]||0; const bh=(v/mx)*ph;
+      const by=(PT+ph-cumH-bh).toFixed(1);
+      if(bh>0.5) out+=`<rect x="${bx}" y="${by}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${ds.backgroundColor}" rx="1.5"/>`;
+      cumH+=bh;
+    });
+    const ang=`rotate(-38,${cx.toFixed(1)},${PT+ph+11})`;
+    out+=`<text transform="${ang}" x="${cx.toFixed(1)}" y="${PT+ph+11}" text-anchor="end" font-size="8" fill="#777">${String(lbl).slice(0,16)}</text>`;
   });
+  let lx=PL;
+  datasets.forEach(ds=>{
+    out+=`<rect x="${lx}" y="${H-13}" width="9" height="9" fill="${ds.backgroundColor}" rx="2"/><text x="${lx+12}" y="${H-5}" font-size="9" fill="#555">${ds.label}</text>`;
+    lx+=ds.label.length*5.5+22;
+  });
+  out+='</svg>';
+  el.innerHTML=out;
+}
 
-  mkChart('c-minitrend',{type:'line',
-    data:{labels:DAILY.map(d=>fmtDateLbl(d.date)),
-      datasets:[{label:'Breach %',data:DAILY.map(d=>d.breach_pct),
-        borderColor:R,backgroundColor:'rgba(192,0,0,.08)',fill:true,
-        pointRadius:4,pointBackgroundColor:R,tension:.3}]},
-    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'% breach'}}},
-      scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'#f0f4f8'}},x:{ticks:{font:{size:9}}}},responsive:true}});
+function _svgLine(el, labels, data, height) {
+  if (!el) return;
+  const W = el.offsetWidth || 560;
+  const H = height || 120;
+  const PL=36, PR=10, PT=8, PB=30;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const mx=Math.max(...data.map(Number),0.01);
+  let out=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let i=0;i<=4;i++){
+    const y=(PT+ph-(i/4)*ph).toFixed(1);
+    out+=`<line x1="${PL}" y1="${y}" x2="${PL+pw}" y2="${y}" stroke="#eef2f7"/>`;
+    out+=`<text x="${PL-3}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#aaa">${(mx*i/4).toFixed(1)}%</text>`;
+  }
+  const pts=data.map((v,i)=>[PL+(i/(data.length-1||1))*pw, PT+ph-(+v/mx)*ph]);
+  const area='M'+pts[0][0].toFixed(1)+','+(PT+ph)+' L'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L')+' L'+pts[pts.length-1][0].toFixed(1)+','+(PT+ph)+' Z';
+  out+=`<path d="${area}" fill="rgba(192,0,0,.08)"/>`;
+  out+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="#C00000" stroke-width="2.5"/>`;
+  const step=Math.max(1,Math.ceil(labels.length/8));
+  labels.forEach((lbl,i)=>{
+    if(i%step===0){const x=(PL+(i/(data.length-1||1))*pw).toFixed(1);out+=`<text x="${x}" y="${PT+ph+13}" text-anchor="middle" font-size="8" fill="#999">${lbl}</text>`;}
+  });
+  pts.forEach(p=>out+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="#C00000"/>`);
+  out+='</svg>';
+  el.innerHTML=out;
+}
+
+function _svgCombo(el, labels, barTotal, barBreach, lineData, height) {
+  if (!el) return;
+  const W=el.offsetWidth||560, H=height||200;
+  const PL=44,PR=44,PT=8,PB=50;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const mxB=Math.max(...barTotal.map(Number),1);
+  const mxL=Math.max(...lineData.map(Number),0.01);
+  const bw=Math.max(4,pw/labels.length*0.65);
+  const gp=pw/labels.length;
+  let out=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let i=0;i<=4;i++){
+    const y=(PT+ph-(i/4)*ph).toFixed(1);
+    const vL=mxB*i/4; const vR=mxL*i/4;
+    out+=`<line x1="${PL}" y1="${y}" x2="${PL+pw}" y2="${y}" stroke="#eef2f7"/>`;
+    out+=`<text x="${PL-3}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#aaa">${vL>=1000?(vL/1000).toFixed(0)+'K':Math.round(vL)}</text>`;
+    out+=`<text x="${PL+pw+3}" y="${(+y+3).toFixed(1)}" text-anchor="start" font-size="8" fill="#ED7D31">${vR.toFixed(1)}%</text>`;
+  }
+  const step=Math.max(1,Math.ceil(labels.length/8));
+  labels.forEach((lbl,i)=>{
+    const cx=PL+i*gp+gp/2; const bx=(cx-bw/2).toFixed(1);
+    const h1=(+barTotal[i]/mxB*ph).toFixed(1); const y1=(PT+ph-+h1).toFixed(1);
+    const h2=(+barBreach[i]/mxB*ph).toFixed(1); const y2=(PT+ph-+h2).toFixed(1);
+    out+=`<rect x="${bx}" y="${y1}" width="${bw.toFixed(1)}" height="${h1}" fill="#D6E4F0" rx="1"/>`;
+    if(+h2>0.5) out+=`<rect x="${bx}" y="${y2}" width="${bw.toFixed(1)}" height="${h2}" fill="rgba(192,0,0,.75)" rx="1"/>`;
+    if(i%step===0){const ang=`rotate(-38,${cx.toFixed(1)},${PT+ph+10})`;out+=`<text transform="${ang}" x="${cx.toFixed(1)}" y="${PT+ph+10}" text-anchor="end" font-size="8" fill="#777">${lbl}</text>`;}
+  });
+  const pts=lineData.map((v,i)=>[PL+i*gp+gp/2, PT+ph-(+v/mxL)*ph]);
+  out+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="#ED7D31" stroke-width="2.5"/>`;
+  pts.forEach(p=>out+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="#ED7D31"/>`);
+  out+=`<rect x="${PL}" y="${H-13}" width="9" height="9" fill="#D6E4F0" rx="2"/><text x="${PL+12}" y="${H-5}" font-size="9" fill="#555">Total Units</text>`;
+  out+=`<rect x="${PL+72}" y="${H-13}" width="9" height="9" fill="rgba(192,0,0,.75)" rx="2"/><text x="${PL+84}" y="${H-5}" font-size="9" fill="#555">Breach Units</text>`;
+  out+=`<line x1="${PL+154}" y1="${H-9}" x2="${PL+163}" y2="${H-9}" stroke="#ED7D31" stroke-width="2"/><text x="${PL+165}" y="${H-5}" font-size="9" fill="#555">Breach %</text>`;
+  out+='</svg>';
+  el.innerHTML=out;
+}
+
+function buildOverviewCharts() {
+  const top15 = PH_DATA.slice(0,15);
+  _svgStackedBar(document.getElementById('c-phbar'),
+    top15.map(p=>p.ph.replace('PHH_','').replace('PickupHub_','PH-')),
+    [{label:'RBND',data:top15.map(p=>p.rbnd),backgroundColor:'#C00000'},
+     {label:'Reattempt',data:top15.map(p=>p.reattempt),backgroundColor:'#ED7D31'},
+     {label:'Delay',data:top15.map(p=>p.delay),backgroundColor:'#2E75B6'}], 220);
+  const top15s=[...SELLERS].sort((a,b)=>b.breach_units-a.breach_units).slice(0,15);
+  _svgStackedBar(document.getElementById('c-top-sellers'),
+    top15s.map(s=>{const nm=s.seller_name&&s.seller_name!=='Unmanaged'?s.seller_name:s.seller_id.slice(0,10)+'…';return nm.length>16?nm.slice(0,15)+'…':nm;}),
+    [{label:'RBND',data:top15s.map(s=>s.rbnd_units||0),backgroundColor:'#C00000'},
+     {label:'Reattempt',data:top15s.map(s=>s.reat_units||0),backgroundColor:'#ED7D31'},
+     {label:'Delay',data:top15s.map(s=>s.delay_units||0),backgroundColor:'#2E75B6'}], 220);
+  _svgLine(document.getElementById('c-minitrend'),
+    DAILY.map(d=>fmtDateLbl(d.date)), DAILY.map(d=>d.breach_pct), 120);
 }
 
 function buildTrendCharts() {
-  const mkChart=(id,cfg)=>{if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg);};
   const lbl=DAILY.map(d=>fmtDateLbl(d.date));
-
-  mkChart('c-trend',{type:'bar',
-    data:{labels:lbl,datasets:[
-      {type:'bar',label:'Total Units',data:DAILY.map(d=>d.total_units),backgroundColor:'#D6E4F0',yAxisID:'y',order:2},
-      {type:'bar',label:'Breach Units',data:DAILY.map(d=>d.breach_units),backgroundColor:'rgba(192,0,0,.75)',yAxisID:'y',order:1},
-      {type:'line',label:'Breach %',data:DAILY.map(d=>d.breach_pct),borderColor:O,backgroundColor:'transparent',
-        pointRadius:4,pointBackgroundColor:O,tension:.3,yAxisID:'y2',order:0}]},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},
-      scales:{y:{grid:{color:'#f0f4f8'}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%'}},
-        x:{ticks:{font:{size:9},maxRotation:45}}},responsive:true}});
-
-  mkChart('c-trend-type',{type:'bar',
-    data:{labels:lbl,datasets:[
-      {label:'RBND',data:DAILY.map(d=>d.rbnd),backgroundColor:R,borderRadius:2},
-      {label:'Reattempt',data:DAILY.map(d=>d.reat),backgroundColor:O,borderRadius:2},
-      {label:'Delay',data:DAILY.map(d=>d.delay),backgroundColor:B,borderRadius:2}]},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},
-      scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45}},y:{stacked:true,grid:{color:'#f0f4f8'}}},responsive:true}});
+  _svgCombo(document.getElementById('c-trend'), lbl,
+    DAILY.map(d=>d.total_units), DAILY.map(d=>d.breach_units), DAILY.map(d=>d.breach_pct), 200);
+  _svgStackedBar(document.getElementById('c-trend-type'), lbl,
+    [{label:'RBND',data:DAILY.map(d=>d.rbnd),backgroundColor:'#C00000'},
+     {label:'Reattempt',data:DAILY.map(d=>d.reat),backgroundColor:'#ED7D31'},
+     {label:'Delay',data:DAILY.map(d=>d.delay),backgroundColor:'#2E75B6'}], 200);
 }
 
 function buildTrendTable() {
@@ -2018,6 +2063,7 @@ function nav(id,el){
   if(id==='sellers')   renderSellers();
   if(id==='ph')        renderPH();
   if(id==='trend')    buildTrendSummary();
+  if(id==='cluster') { if(CL_DATA.length){renderCluster();buildClusterSummary();} else if((SELLERS||[]).length) try{buildClusterTab();}catch(e){console.error('buildClusterTab on nav:',e);} }
 }
 
 function showErr(msg){
@@ -2456,31 +2502,97 @@ let CL_DATA = [];
 let CL_SORT = 'drr';
 let CL_ASC  = false;
 
-function buildClusterTab() {
-  const cats  = [...new Set(CLUSTER_DATA.map(r=>r[2]).filter(Boolean))].sort();
-  const verts = [...new Set(CLUSTER_DATA.map(r=>r[3]).filter(Boolean))].sort();
-  const scEl  = document.getElementById('cl-super-cat');
-  const vEl   = document.getElementById('cl-vertical');
-  if (scEl) scEl.innerHTML = '<option value="">All Super Categories</option>' +
-    cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  if (vEl) vEl.innerHTML = '<option value="">All Verticals</option>' +
-    verts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+function buildClusterSummary() {
+  const el = document.getElementById('cluster-summary');
+  if (!el || !CL_DATA.length) return;
+  const breached  = CL_DATA.filter(r=>r.breach_days>0);
+  const highSev   = CL_DATA.filter(r=>r.sev==='High').length;
+  const medSev    = CL_DATA.filter(r=>r.sev==='Medium').length;
+  const totalBU   = CL_DATA.reduce((a,r)=>a+(+r.breach_units||0),0);
+  const totalU    = CL_DATA.reduce((a,r)=>a+(+r.units||0),0);
+  const bPct      = totalU>0?(totalBU/totalU*100).toFixed(1):0;
+  const avgDRR    = CL_DATA.length ? (CL_DATA.reduce((a,r)=>a+(+r.drr||0),0)/CL_DATA.length).toFixed(1) : 0;
 
-  const breachMap = new Map();
-  (SELLERS||[]).forEach(s => breachMap.set(s.seller_id, {
-    breach_units: s.breach_units||0, breach_pct: s.breach_pct||0, breach_days: s.breach_days||0
-  }));
-
-  CL_DATA = CLUSTER_DATA.map(r => {
-    const sid=r[0], fid=r[1], super_cat=r[2], vertical=r[3], svc=r[4], pincode=r[5], gmv=r[6], units=r[7];
-    const drr = +(units/31).toFixed(1);
-    const b   = breachMap.get(sid) || {breach_units:0, breach_pct:0, breach_days:0};
-    const sev = b.breach_pct>30?'High':b.breach_pct>10?'Medium':b.breach_pct>0?'Low':'None';
-    return {seller_id:sid, facility_id:fid, super_cat, vertical, service_profile:svc,
-            pincode, gmv, units, drr, breach_units:b.breach_units,
-            breach_pct:b.breach_pct, breach_days:b.breach_days, sev};
+  // By super category
+  const catMap = {};
+  CL_DATA.forEach(r=>{
+    if(!r.super_cat) return;
+    catMap[r.super_cat] = catMap[r.super_cat]||{n:0,b:0,bu:0};
+    catMap[r.super_cat].n++;
+    if(r.breach_days>0) catMap[r.super_cat].b++;
+    catMap[r.super_cat].bu += +r.breach_units||0;
   });
-  renderCluster();
+  const cats = Object.entries(catMap).sort((a,c)=>c[1].bu-a[1].bu).slice(0,6);
+  const maxCatB = cats[0]?.[1]?.bu||1;
+
+  // Top 6 by breach units
+  const topB = [...CL_DATA].filter(r=>r.breach_units>0).sort((a,b)=>b.breach_units-a.breach_units).slice(0,6);
+
+  el.innerHTML = `
+    <div class="sum-card-row">
+      <div class="scard"><label>Cluster Sellers</label><div class="sv">${fmt(CL_DATA.length)}</div><div class="ss">tracked sellers</div></div>
+      <div class="scard red"><label>Sellers Breached</label><div class="sv">${fmt(breached.length)}</div><div class="ss">${CL_DATA.length>0?(breached.length/CL_DATA.length*100).toFixed(0):0}% of cluster</div></div>
+      <div class="scard ora"><label>Breach Units</label><div class="sv">${fmt(totalBU)}</div><div class="ss">${bPct}% breach rate</div></div>
+      <div class="scard pur"><label>High / Medium Severity</label><div class="sv" style="font-size:15px">${fmt(highSev)} / ${fmt(medSev)}</div><div class="ss">sellers >30% / 10-30% breach</div></div>
+      <div class="scard grn"><label>Avg DRR</label><div class="sv">${avgDRR}</div><div class="ss">units/day (31d avg)</div></div>
+    </div>
+    <div class="sum-grid">
+      <div>
+        <div class="sum-title">By Super Category</div>
+        <table class="sum-tbl"><thead><tr><th>Category</th><th class="num">Sellers</th><th class="num">Breached</th><th class="num">Breach Units</th><th class="num" style="width:80px"></th></tr></thead>
+        <tbody>${cats.map(([cat,v])=>`<tr>
+          <td><b>${esc(cat)}</b></td>
+          <td class="num">${v.n}</td>
+          <td class="num" style="color:${v.b>0?'#C00':'inherit'}">${v.b}</td>
+          <td class="num">${fmt(v.bu)}</td>
+          <td><div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.round(v.bu/maxCatB*100)}%"></div></div></td>
+        </tr>`).join('')}</tbody></table>
+      </div>
+      <div>
+        <div class="sum-title">Top Breached Cluster Sellers</div>
+        <table class="sum-tbl"><thead><tr><th>Seller ID</th><th>Vertical</th><th class="num">Breach Units</th><th class="num">Breach %</th><th class="num">Days</th></tr></thead>
+        <tbody>${topB.map(r=>`<tr>
+          <td style="font-family:monospace;font-size:10px">${esc(r.seller_id.slice(0,14))}…</td>
+          <td style="font-size:10px">${esc(r.vertical)}</td>
+          <td class="num" style="color:#C00;font-weight:700">${fmt(r.breach_units)}</td>
+          <td class="num" style="color:${r.breach_pct>30?'#C00':r.breach_pct>10?'#ED7D31':'inherit'}">${r.breach_pct}%</td>
+          <td class="num">${r.breach_days}</td>
+        </tr>`).join('')}</tbody></table>
+      </div>
+    </div>`;
+}
+
+function buildClusterTab() {
+  try {
+    const cats  = [...new Set(CLUSTER_DATA.map(r=>r[2]).filter(Boolean))].sort();
+    const verts = [...new Set(CLUSTER_DATA.map(r=>r[3]).filter(Boolean))].sort();
+    const scEl  = document.getElementById('cl-super-cat');
+    const vEl   = document.getElementById('cl-vertical');
+    if (scEl) scEl.innerHTML = '<option value="">All Super Categories</option>' +
+      cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if (vEl) vEl.innerHTML = '<option value="">All Verticals</option>' +
+      verts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    const breachMap = new Map();
+    (SELLERS||[]).forEach(s => breachMap.set(s.seller_id, {
+      breach_units: s.breach_units||0, breach_pct: s.breach_pct||0, breach_days: s.breach_days||0
+    }));
+    CL_DATA = (window.CLUSTER_DATA||CLUSTER_DATA).map(r => {
+      const sid=r[0], fid=r[1], super_cat=r[2], vertical=r[3], svc=r[4], pincode=r[5], gmv=r[6], units=r[7];
+      const drr = +(units/31).toFixed(1);
+      const b   = breachMap.get(sid) || {breach_units:0, breach_pct:0, breach_days:0};
+      const sev = b.breach_pct>30?'High':b.breach_pct>10?'Medium':b.breach_pct>0?'Low':'None';
+      return {seller_id:sid, facility_id:fid, super_cat, vertical, service_profile:svc,
+              pincode, gmv, units, drr, breach_units:b.breach_units,
+              breach_pct:b.breach_pct, breach_days:b.breach_days, sev};
+    });
+    console.log('[Cluster] CL_DATA length:', CL_DATA.length);
+    renderCluster();
+    buildClusterSummary();
+  } catch(e) {
+    console.error('[Cluster] buildClusterTab error:', e);
+    const body = document.getElementById('cl-body');
+    if (body) body.innerHTML = '<tr><td colspan="12" style="color:#c00;padding:16px">⚠ Error building cluster tab: '+e.message+'</td></tr>';
+  }
 }
 
 function sortCL(col) {
