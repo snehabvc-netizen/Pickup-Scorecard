@@ -315,6 +315,7 @@ tbody tr:hover td{background:#f0f8ff}
 
   <!-- OVERVIEW -->
   <div class="page active" id="page-overview">
+    <div id="kpi-row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px"></div>
     <div id="kpi-edit-panel" style="background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);padding:16px 20px;margin-bottom:14px;display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:700;color:var(--ora);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;margin-top:28px">✏️ Edit KPIs</span>
       <div style="display:flex;gap:14px;flex-wrap:wrap;flex:1">
@@ -621,9 +622,12 @@ let sSortCol = 'breach_days', sSortDir = 'desc';
 let totalFileRows = 0;
 
 function reset() {
-  Object.values(CHARTS).forEach(c=>{try{c.destroy()}catch(e){}});
-  CHARTS = {};
   document.getElementById('file-input').value = '';
+  _pendingBreachFile = null;
+  const btn = document.getElementById('btn-generate');
+  if (btn) btn.style.display = 'none';
+  const bfn = document.getElementById('breach-file-name');
+  if (bfn) bfn.textContent = '';
   document.getElementById('err-msg').style.display = 'none';
   document.getElementById('upload-screen').style.display = 'flex';
   document.getElementById('dash-screen').style.display = 'none';
