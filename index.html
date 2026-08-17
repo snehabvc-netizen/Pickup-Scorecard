@@ -1012,6 +1012,7 @@ function startProcess(file) {
   const sellerDateUnits  = Object.create(null); // 'seller|date' -> total units (for window denominator)
   const phDateUnits      = Object.create(null);
   const sellerLowDRRDates = Object.create(null); // 'seller|date' -> 1 when seller had Low_DRR on that day
+  const dateToWeekNum = Object.create(null); // date string -> week number from CSV
   // Ekart issue tracking
   const ekartBDates     = new Map();
   const ekartBUnits     = new Map();
@@ -1059,6 +1060,7 @@ function startProcess(file) {
       lowDRRStatus: find('Low_DRR_Status','low_drr_status','Low DRR Status','low drr status','Low DRR_Status'),
       incub:    find('Incubation','incubation','Incub','incub','is_incubation','Is Incubation','Is_Incubation'),
       issueType: find('issue_type','issuetype','issue type'),
+      weeknum:   find('Week num','week num','weeknum','week_num','Week Num','WEEK NUM'),
     };
   }
 
@@ -1117,6 +1119,8 @@ function startProcess(file) {
         if (!seller || !date) continue;
         processedRows++;
 
+        const weekNumVal = colMap.weeknum ? parseInt(row[colMap.weeknum]||0)||0 : 0;
+        if (weekNumVal && date && !dateToWeekNum[date]) dateToWeekNum[date] = weekNumVal;
         const isEmbargo = embargo === 'Embargo';
         if (isEmbargo) { embargoExcluded++; }
 
@@ -1387,7 +1391,7 @@ function startProcess(file) {
           ekartUnits, ekartSellerDateUnits, ekartDateBreach, ekartDayB,
           dateUnits, dateBreach,
           lowDRRSellers, incubSellers, ekartLowDRRSellers, ekartIncubSellers, sellerLowDRRDates,
-          sellerPH, ekartBDates, ekartBUnits,
+          sellerPH, ekartBDates, ekartBUnits, dateToWeekNum,
         };
 
         // Build DAILY
@@ -2276,27 +2280,32 @@ function weekLabel(dateStr) {
 function buildDateFilterUI() {
   if (!_allDates || !_allDates.length) return;
   const monthMap = {}; // 'YYYY-MM' -> [dates]
-  const weekMap  = {}; // monDateStr -> {label, dates:[]}
+  const weekMap  = {}; // weekKey -> {label, dates:[]}
+  // Use actual Week num from CSV if available, else fall back to computed Sun-Sat week
+  const _dtwn = (_rawData && _rawData.dateToWeekNum) ? _rawData.dateToWeekNum : {};
   _allDates.forEach(d => {
-    const ym = d.slice(0,7);
+    // Month grouping: use MM part for MM-DD-YYYY, or first 7 chars for YYYY-MM-DD
+    const p = d.split('-');
+    const ym = p[2]&&p[2].length===4 ? (p[2]+'-'+p[0]) : d.slice(0,7); // convert MM-DD-YYYY → YYYY-MM
     if (!monthMap[ym]) monthMap[ym] = [];
     monthMap[ym].push(d);
-    const wk = isoWeekSun(d);
-    if (!weekMap[wk]) weekMap[wk] = {label: weekLabel(d), dates:[]};
+    // Week grouping: prefer CSV Week num
+    const wn = _dtwn[d];
+    const wk = wn ? ('W'+String(wn).padStart(2,'0')) : isoWeekSun(d);
+    const wlbl = wn ? ('Week '+wn) : weekLabel(d);
+    if (!weekMap[wk]) weekMap[wk] = {label: wlbl, dates:[]};
     weekMap[wk].dates.push(d);
   });
-  // Date → week key (for date chips to map back to a week)
-  const dateToWeek = {};
-  _allDates.forEach(d => { dateToWeek[d] = isoWeekSun(d); });
   window._dfMonthMap = monthMap;
   window._dfWeekMap  = weekMap;
-  window._dfDateToWeek = dateToWeek;
 
   const mWrap = document.getElementById('df-month-wrap');
   if (!mWrap) return;
   mWrap.innerHTML = '<span style="color:#555;font-weight:600;margin-right:4px">Month:</span>' +
     Object.keys(monthMap).sort().map(ym => {
-      const mon = new Date(ym+'-01').toLocaleString('en-IN',{month:'short',year:'numeric'});
+      // ym is YYYY-MM; parse safely
+      const [myy,mmm] = ym.split('-');
+      const mon = new Date(+myy, +mmm-1, 1).toLocaleString('en-IN',{month:'short',year:'numeric'});
       return `<button class="df-chip" data-type="month" data-key="${ym}" onclick="toggleDateChip(this)">${mon}</button>`;
     }).join('');
 
@@ -2311,7 +2320,7 @@ function buildDateFilterUI() {
   if (dWrap) {
     dWrap.innerHTML = '<span style="color:#555;font-weight:600;margin-right:4px">Date:</span>' +
       _allDates.map(d => {
-        const lbl = new Date(d+'T00:00:00').toLocaleString('en-IN',{day:'2-digit',month:'short'});
+        const lbl = fmtDateLbl(d); // uses fmtDateLbl which handles MM-DD-YYYY
         return `<button class="df-chip" data-type="date" data-key="${d}" onclick="toggleDateChip(this)">${lbl}</button>`;
       }).join('');
   }
@@ -2489,6 +2498,7 @@ function recomputeForDates(dateArr) {
   renderSellers();
   renderPH();
   renderCritical();
+  try{buildClusterTab();}catch(e){console.error('recompute cluster:',e);}
   const kset=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   kset('kpi-total-sellers',fmt(AGG.totalSellers));
   kset('kpi-breached-sellers',fmt(AGG.breachedSellers));
